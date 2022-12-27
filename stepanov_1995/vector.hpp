@@ -27,13 +27,13 @@
 #ifndef VECTOR_H
 #define VECTOR_H
 
-#include <function.h>
-#include <algobase.h>
-#include <bool.h>
+// #include <function.h>
+// #include <algobase.h>
+// #include <bool.h>
 
 #ifndef Allocator
 #define Allocator allocator
-#include <defalloc.h>
+// #include <defalloc.h>
 #endif
 
 #ifndef vector
