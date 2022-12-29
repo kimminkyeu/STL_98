@@ -10,11 +10,11 @@
 #include <map>
 
 #include "__config.hpp"
-#include "ft_utils.hpp"
+#include "ft_utility.hpp"
 #include "ft_iterator.hpp"
 
 // [참고 0. std::vector ]
- #include <vector>
+// #include <vector>
 
 // [참고 1. Cherno ] 		: https://www.youtube.com/watch?v=ryRf4Jh_YC0&t=1354s
 // [참고 2. gcc-mirror ]	    : https://github.com/gcc-mirror/gcc/blob/master/libstdc%2B%2B-v3/include/bits/stl_vector.h
@@ -34,12 +34,12 @@ class vector
 public: // typedefs
 	typedef T											value_type;
 	typedef Allocator							        allocator_type;
-	typedef typename allocator_type::size_type			size_type;
-	typedef typename allocator_type::difference_type	difference_type; // ? 이건 뭐지 ?
+	typedef typename allocator_type::size_type			size_type;          // size_t on std::allocator
+	typedef typename allocator_type::difference_type	difference_type;    // ptrdiff_t on std::allocator
 	typedef typename allocator_type::reference       	reference;
     typedef typename allocator_type::const_reference	const_reference;
-	typedef typename allocator_type::pointer			pointer;
-	typedef typename allocator_type::const_pointer		const_pointer;
+	typedef typename allocator_type::pointer			pointer;            // _Tp* on std::allocator
+	typedef typename allocator_type::const_pointer		const_pointer;      // const _Tp* on std::allocator
 
 
 	// TODO: need to implement iterator class for vector?
@@ -122,16 +122,17 @@ public:
 	// https://cplusplus.com/reference/vector/vector/vector/
 	// copy constructor via other vector's iterator
 	// [ * Member Function Re-templatize ]
-
 	template <class InputIterator>
 	_FT_INLINE_VISIBILITY
 	vector(InputIterator first, InputIterator last, const allocator_type& _allocator = allocator_type()) _FT_NOEXCEPT
-		: m_Allocator(_allocator)
+		: m_Allocator(_allocator), m_Start(0), m_Finish(0), m_End_of_storage(0) // init memnber to 0
 	{
 		const difference_type new_size = std::distance(first, last);
-		m_Start = m_Allocator.allocate(new_size);
-		m_Finish = std::uninitialized_copy(first, last, m_Start);
-		m_End_of_storage = m_Finish;
+		if (new_size > 0) {
+			m_Start = m_Allocator.allocate(new_size);
+			m_Finish = std::uninitialized_copy(first, last, m_Start);
+			m_End_of_storage = m_Finish;
+		}
 	}
 
 	// copy constructor via other vector
@@ -139,7 +140,8 @@ public:
 	vector(const ft::vector<T, allocator_type> &x) _FT_NOEXCEPT
 		: m_Allocator(allocator_type())
 	{
-		m_Start = m_Allocator.allocate(x.end() - x.begin());
+		const difference_type new_size = std::distance(x.begin(), x.end());
+		m_Start = m_Allocator.allocate(new_size);
 		m_Finish = std::uninitialized_copy(x.begin(), x.end(), m_Start);
 		m_End_of_storage = m_Finish;
 	}
@@ -156,25 +158,17 @@ public:
 		if (*this == other) return *this;
 
 		// if other is larger, then need to reallocate memory
+		this->_destroy(m_Start, m_Finish);
 		if (other.size() > this->capacity())
 		{
-			// (1) delete original
-			this->_destroy(m_Start, m_Finish);
 			m_Allocator.deallocate(m_Start, this->capacity());
-
-			// (2) copy
-			m_Start = this->m_Allocator.allocate(other.end() - other.begin());
-			m_End_of_storage = std::uninitialized_copy(other.begin(), other.end(), m_Start);
-		}
-		// ? if self is larger than other ?
-		else if (this->size() > other.size())
-		{
-
+			const difference_type new_size = std::distance(other.begin(), other.end());
+			m_Start = this->m_Allocator.allocate(new_size);
+			m_Finish = std::uninitialized_copy(other.begin(), other.end(), m_Start);
+			m_End_of_storage = m_Finish;
 		}
 		else
-		{
-
-		}
+			m_Finish = std::uninitialized_copy(other.begin(), other.end(), m_Start);
 
 		return (*this);
 	}
@@ -307,44 +301,132 @@ public:
 	// ---------------------------------------------------------------------------
 	// 23.2.4.3 modifiers:
 
-	void push_back(const T &x)
+	void push_back(const T &value)
 	{
-
+		if (this->size() >= this->capacity()) {
+			_reAlloc(this->capacity() + (this->capacity() / 2));
+		}
+		m_Allocator.construct(m_Finish, value);
+		m_Finish++;
 	}
 
 	void pop_back()
 	{
-
+		if (this->empty()) {
+			return ;
+		}
+		m_Allocator.destory(--m_Finish);
 	}
 
-	iterator insert(iterator position, const T &x)
+	// TODO: 이건 성능 검증을 좀 해야 겠다.
+	iterator insert(iterator position, const T &value)
 	{
+		// 1 2 3 .
 
+		//   p   c
+		// 1 2 3 A .
+
+		//   p c
+		// 1 2 A 3 .
+
+		//   c
+		// 1 A 2 3 .
+
+		push_back(value); // (1) 일단 맨 뒤에 넣고.
+		iterator cur = m_Finish - 1; // cur = 마지막 원소
+		while (cur != position) {
+			// (2) 뒤에서 앞으로 swap 진행.
+			ft::swap(*(cur), *(--cur));
+		}
+		return (cur);
 	}
 
-	void insert(iterator position, size_type n, const T &x)
+	// TODO: 굳이 destroy 를 해야 하나? 그냥 덮어 쓰면 안되나...
+	void insert(iterator position, size_type n, const T &value)
 	{
-
+		// (1) 뒷 부분 따로 보유.
+		ft::vector<T> tmp(position, m_Finish);
+		_destroy(position, m_Finish);
+		// (2) 공간 필요시 확장.
+		if (this->size() + n >= this->capacity()) {
+			_reAlloc(this->capacity() + (this->capacity() / 2) + n);
+		}
+		// (3) position 부터 value n개 삽입.
+		std::uninitialized_fill_n(position, n, value);
+		// (4) position + n 부터 백업본 복사.
+		m_Finish = std::uninitialized_copy(tmp.begin(), tmp.end(), position + n);
+		// (5) 백업본 삭제.
+		_destroy(tmp.begin(), tmp.end());
+		m_Allocator.deallocate(tmp.begin(), tmp.capacity());
 	}
 
+	// TODO: Possible refactoring !
 	template <class InputIterator>
 	void insert(iterator position, InputIterator first, InputIterator last)
 	{
-
+		// (0) first 부터 last 까지 개수 구하기
+		const difference_type sizeToCopy = std::distance(first, last);
+		// (1) 뒷 부분 따로 보유.
+		ft::vector<T> tmp(position, m_Finish);
+		_destroy(position, m_Finish);
+		// (2) 공간 필요시 확장.
+		if (this->size() + sizeToCopy >= this->capacity()) {
+			_reAlloc(this->capacity() + (this->capacity() / 2) + sizeToCopy);
+		}
+		// (3) position 부터 value n개 삽입.
+		m_Finish = std::uninitialized_copy(first, last, position);
+		// (4) position + sizeToCopy 부터 백업본 복사.
+		m_Finish = std::uninitialized_copy(tmp.begin(), tmp.end(), position + sizeToCopy);
+		// (5) 백업본 삭제.
+		_destroy(tmp.begin(), tmp.end());
+		m_Allocator.deallocate(tmp.begin(), tmp.capacity());
 	}
 
+	/* An iterator pointing to the new location of the element
+	that followed the last element erased by the function call. */
 	iterator erase(iterator position)
 	{
+		//   c
+		// 1 A 2 3 .
 
+		//   p c
+		// 1 2 A 3 .
+
+		//   p   c
+		// 1 2 3 A .
+
+		//   p   c
+		// 1 2 3 x
+
+		iterator cur = position;
+		while (cur != (m_Finish - 1)) {
+			ft::swap(*cur, *(++cur));
+		}
+		pop_back();
+		return (position + 1);
 	}
 
+	/* An iterator pointing to the new location of the element
+	that followed the last element erased by the function call. */
 	iterator erase(iterator first, iterator last)
 	{
-
+		if (first == last)
+			return ;
+		// (0) first 부터 last 까지 개수 구하기
+		const difference_type sizeToReduce = std::distance(first, last);
+		// (1) 삭제 뒷 부분 따로 보유.
+		ft::vector<T> tmp(last, m_Finish);
+		// (2) first 이후 부터 싹 다 제거.
+		_destroy(first, m_Finish);
+		// (3) first 로 백업본 복사.
+		m_Finish = std::uninitialized_copy(tmp.begin(), tmp.end(), m_Start);
+		// (4) 백업본 삭제.
+		_destroy(tmp.begin(), tmp.end());
+		m_Allocator.deallocate(tmp.begin(), tmp.capacity());
 	}
 
 
-	void swap(vector<T, allocator_type> & other)
+	void swap(vector<T, allocator_type>& other)
 	{
 		// 두 벡터간 데이터 교체가 iterator만 교체해주면 되기 때문에 몹시 쉬움.
 		ft::swap(m_Start, other.m_Start);
@@ -359,34 +441,53 @@ public:
 		this->_destroy(m_Start, m_Finish);
 		m_Finish = m_Start;
 	}
-
-
-
-
-
-
 };
 
 // Non-member function.
-// 왜 Non-member인지는 객체 지향에 대한 이해가 필요하다.
-// 참고링크 : https://www.codeproject.com/Articles/4534/Non-Member-Functions-in-OOP
-// 참고링크 : https://www.aristeia.com/Papers/CUJ_Feb_2000.pdf --> effective c++ 작성자의 글
+// -----------------------------------------------------------
 
-// TODO: ft::equal() 과 ft::lexicographical_compare() 구현하기.
-
-template <class T>
-bool operator== (const vector<T>& x, const vector<T>& y)
+template <class T, class Allocator>
+bool operator==(const vector<T,Allocator>& x, const vector<T,Allocator>& y)
 {
 	return x.size() == y.size() && ft::equal(x.begin(), x.end(), y.begin());
 }
 
-template <class T>
-bool operator< (const vector<T>& x, const vector<T>& y)
+template <class T, class Allocator>
+bool operator< (const vector<T,Allocator>& x, const vector<T,Allocator>& y)
 {
 	return ft::lexicographical_compare(x.begin(), x.end(), y.begin(), y.end());
 }
 
+template <class T, class Allocator>
+bool operator!=(const vector<T,Allocator>& x, const vector<T,Allocator>& y)
+{
 
+}
+
+template <class T, class Allocator>
+bool operator> (const vector<T,Allocator>& x, const vector<T,Allocator>& y)
+{
+
+}
+
+template <class T, class Allocator>
+bool operator>=(const vector<T,Allocator>& x, const vector<T,Allocator>& y)
+{
+
+}
+
+template <class T, class Allocator>
+bool operator<=(const vector<T,Allocator>& x, const vector<T,Allocator>& y)
+{
+
+}
+
+// specialized algorithms:
+template <class T, class Allocator>
+void swap(vector<T,Allocator>& x, vector<T,Allocator>& y)
+{
+
+}
 
 
 } // namespace ft

@@ -13,7 +13,7 @@ set(STL_SRC_FILES
 
 set(TEST_SRC_FILES
         test/main.cpp
-        include/ft_utils.hpp include/__config.hpp)
+        include/ft_utility.hpp include/__config.hpp)
 
 add_executable(tester
         ${STL_SRC_FILES}
