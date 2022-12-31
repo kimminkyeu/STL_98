@@ -12,7 +12,21 @@
 
 #ifdef __cplusplus
 
+// ---------------------------------------------------------------------------------------------
+// * handle namespace of library (ex. ft::vector, ft::map)
+// @ namespace for library function call
+#define FT                              ft
+#define FT_BEGIN_GLOBAL_NAMESPACE       namespace FT {
+#define FT_END_GLOBAL_NAMESPACE         }
 
+// @ namespace for internal helper function call ( not for API )
+//   - you can access helper functions by calling ft::_PRIVATE::foo()
+#define _PRIVATE                        __this_is_hidden_namespace_for_internal_helper_function__
+#define FT_BEGIN_PRIVATE_NAMESPACE      FT_BEGIN_GLOBAL_NAMESPACE namespace _PRIVATE {
+#define FT_END_PRIVATE_NAMESPACE        } }
+
+
+// ---------------------------------------------------------------------------------------------
 //  * C++ version defined macro */
 #ifndef FT_STD_VER
 #  if   __cplusplus <= 199711L
@@ -31,20 +45,9 @@
 #endif  // FT_STD_VER
 
 
-// * handle namespace of library (ex. ft::vector, ft::map)
-// @ namespace for library function call
-#define FT                              ft
-#define FT_BEGIN_GLOBAL_NAMESPACE       namespace FT {
-#define FT_END_GLOBAL_NAMESPACE         }
-
-// @ namespace for internal helper function call ( not for API )
-#define _PRIVATE                        __this_is_hidden_namespace_for_internal_helper_function__
-#define FT_BEGIN_PRIVATE_NAMESPACE      FT_BEGIN_GLOBAL_NAMESPACE namespace _PRIVATE {
-#define FT_END_PRIVATE_NAMESPACE        } }
-
-
-
+// ---------------------------------------------------------------------------------------------
 // * setting inline attributes
+
 // @ FT_ALWAYS_INLINE
 #define FT_ALWAYS_INLINE    __attribute__ ((__always_inline__))
 
@@ -66,7 +69,6 @@
 #    define FT_HIDDEN
 #  endif
 #endif
-
 
 // * About Enable-if function. why???
 /*
@@ -92,7 +94,12 @@
 #  define _FT_DEPRECATED
 #endif
 
+// * set inline attribute here...
+#define FT_INLINE_VISIBILITY    FT_ALWAYS_INLINE
 
+
+
+// ---------------------------------------------------------------------------------------------
 // * because C++98 has no "noexcept" keyword ...
 #if !(__has_feature(cxx_noexcept))
 #define FT_HAS_NO_NOEXCEPT
@@ -118,10 +125,8 @@
 #  define FT_FALLTHROUGH() ((void)0)
 #endif
 
-// * set inline attribute here...
-#define FT_INLINE_VISIBILITY FT_ALWAYS_INLINE
 
 
-#endif // #ifdef __cplusplus
+#endif // __cplusplus
 
 #endif //FT_CONTAINER___CONFIG_HPP
