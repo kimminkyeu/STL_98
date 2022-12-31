@@ -7,6 +7,7 @@
 int main()
 {
 	ft::vector<int> vec;
+	ft::
 //	ft::vector<std::string> vec;
 //	vec.push_back("Minkyeki");
 //	vec.push_back("C++");

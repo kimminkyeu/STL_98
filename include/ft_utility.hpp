@@ -5,12 +5,15 @@
 #ifndef FT_CONTAINER_FT_UTILITY_HPP
 #define FT_CONTAINER_FT_UTILITY_HPP
 
-// --------------------------------------------------------
-//    ft_container subject 에서 명시한 직접 구현 사항들 입니다.   |
-// --------------------------------------------------------
+// --------------------------------------------------------------------------------
+//  ft_container subject 에서 명시한 직접 구현 사항들 입니다.
+//  * template helper function을 최대한 숨기기 위해, [_PRIVATE] namespace를 이용하였습니다.
+//  자세한 namespace definition은 "__config.hpp" 소스를 참고하시기 바랍니다.
+// --------------------------------------------------------------------------------
 
-namespace ft
-{
+#include "__config.hpp"
+FT_BEGIN_PRIVATE_NAMESPACE
+
 
 // (1) std::equal() : [ Defined in header <algorithm> ]
 // https://en.cppreference.com/w/cpp/algorithm/equal
@@ -79,6 +82,6 @@ struct is_integral
 
 };
 
-}
 
+FT_END_PRIVATE_NAMESPACE
 #endif //FT_CONTAINER_FT_UTILITY_HPP

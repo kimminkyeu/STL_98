@@ -5,32 +5,26 @@
 #ifndef FT_CONTAINER_VECTOR_HPP
 #define FT_CONTAINER_VECTOR_HPP
 
-#include <memory>
-//#include <algorithm>
-#include <map>
 
+// --------------------------------------------------------------------------------------------------------------------
+// [참고 0. std::vector ]
+// #include <vector>
+// [참고 1. Cherno ] 		: https://www.youtube.com/watch?v=ryRf4Jh_YC0&t=1354s
+// [참고 2. gcc-mirror ]	    : https://github.com/gcc-mirror/gcc/blob/master/libstdc%2B%2B-v3/include/bits/stl_vector.h
+// [참고 3. C++ Standard ] 	: https://www.lirmm.fr/~ducour/Doc-objets/ISO+IEC+14882-1998.pdf
+// [참고 4. First STL ] 	    : stepanov 1995 소스코드
+// --------------------------------------------------------------------------------------------------------------------
+
+#include <memory>
 #include "__config.hpp"
 #include "ft_utility.hpp"
 #include "ft_iterator.hpp"
 
-// [참고 0. std::vector ]
-// #include <vector>
-
-// [참고 1. Cherno ] 		: https://www.youtube.com/watch?v=ryRf4Jh_YC0&t=1354s
-// [참고 2. gcc-mirror ]	    : https://github.com/gcc-mirror/gcc/blob/master/libstdc%2B%2B-v3/include/bits/stl_vector.h
-// [참고 3. C++ Standard ] 	: https://www.lirmm.fr/~ducour/Doc-objets/ISO+IEC+14882-1998.pdf 
-// [참고 4. First STL ] 	    : stepanov 1995 소스코드
-
-namespace ft
-{
-
-
-
+FT_BEGIN_GLOBAL_NAMESPACE
 
 template<typename T, class Allocator = std::allocator<T> >
 class vector
 {
-
 public: // typedefs
 	typedef T											value_type;
 	typedef Allocator							        allocator_type;
@@ -41,18 +35,13 @@ public: // typedefs
 	typedef typename allocator_type::pointer			pointer;            // _Tp* on std::allocator
 	typedef typename allocator_type::const_pointer		const_pointer;      // const _Tp* on std::allocator
 
+	// Subject : If the container has an iterator system, you must implement it.
+	typedef typename FT::iterator<pointer>            iterator;
+	typedef typename FT::iterator<const_pointer>      const_iterator;
+	typedef typename FT::reverse_iterator<iterator>			reverse_iterator;
+	typedef typename FT::reverse_iterator<const_iterator>		const_reverse_iterator;
 
-	// TODO: need to implement iterator class for vector?
-	typedef typename allocator_type::pointer			iterator; 		// ? 이렇게 해도 되나 ?
-	typedef typename allocator_type::const_pointer		const_iterator; // ? 이렇게 해도 되나 ?
-
-	// TODO: ??
-	typedef typename ft::reverse_iterator<iterator>				reverse_iterator;
-	typedef typename ft::reverse_iterator<const_iterator>		const_reverse_iterator;
-
-
-	// ? 1995 소스코드를 보면 static으로 되어 있다. 이게 왜 static인지 모르겠다. 그리고 그게 좋나?
-private:
+protected:
 	allocator_type m_Allocator;
 
 private: // data members
@@ -63,8 +52,8 @@ private: // data members
 private: // helper functions
 
 	// destruct every object from start to end.
-	_FT_INLINE_VISIBILITY
-	void _destroy(iterator start, iterator end) _FT_NOEXCEPT
+	FT_INLINE_VISIBILITY
+	void _destroy(iterator start, iterator end) FT_NOEXCEPT
 	{
 		while (start != end)
 		{
@@ -74,10 +63,8 @@ private: // helper functions
 	}
 
 	// data reallocation to new block of memory (force change)
-
-	// ! 근데 만약 벡터에 객체 포인터가 들어있으면 어떻게 되나?
-	_FT_INLINE_VISIBILITY
-	void _reAlloc(size_t newCapacity) _FT_NOEXCEPT
+	FT_INLINE_VISIBILITY
+	void _reAlloc(size_t newCapacity) FT_NOEXCEPT
 	{
 		if (newCapacity == this->capacity())
 			return;
@@ -103,16 +90,16 @@ public:
 	// ---------------------------------------------------------------------------
 
 	/* Constructs an empty container, with no elements */
-	_FT_INLINE_VISIBILITY
-	explicit vector(const allocator_type& _allocator = allocator_type()) _FT_NOEXCEPT
+	FT_INLINE_VISIBILITY
+	explicit vector(const allocator_type& _allocator = allocator_type()) FT_NOEXCEPT
 		: m_Allocator(_allocator), m_Start(0), m_Finish(0), m_End_of_storage(0) // init memnber to 0
 	{}
 
 	/* Constructs a container with n elements. Each element is a copy of val. */
-	_FT_ALWAYS_INLINE
+	FT_ALWAYS_INLINE
 	explicit vector(size_type n, const T &value = T(), const allocator_type& _allocator = allocator_type())
 	{
-		// ! 이렇게 호출해도 되는겨? Allocator instance가 없는데?
+		// * 이렇게 호출해도 되는겨? Allocator instance가 없는데?
 		m_Start = _allocator.allocate(n);
 		std::uninitialized_fill_n(m_Start, n, value); // using function at <memory.h>, Cpp98
 		m_Finish = m_Start + n;
@@ -123,8 +110,8 @@ public:
 	// copy constructor via other vector's iterator
 	// [ * Member Function Re-templatize ]
 	template <class InputIterator>
-	_FT_INLINE_VISIBILITY
-	vector(InputIterator first, InputIterator last, const allocator_type& _allocator = allocator_type()) _FT_NOEXCEPT
+	FT_INLINE_VISIBILITY
+	vector(InputIterator first, InputIterator last, const allocator_type& _allocator = allocator_type()) FT_NOEXCEPT
 		: m_Allocator(_allocator), m_Start(0), m_Finish(0), m_End_of_storage(0) // init memnber to 0
 	{
 		const difference_type new_size = std::distance(first, last);
@@ -136,8 +123,8 @@ public:
 	}
 
 	// copy constructor via other vector
-	_FT_INLINE_VISIBILITY
-	vector(const ft::vector<T, allocator_type> &x) _FT_NOEXCEPT
+	FT_INLINE_VISIBILITY
+	vector(const FT::vector<T, allocator_type> &x) FT_NOEXCEPT
 		: m_Allocator(allocator_type())
 	{
 		const difference_type new_size = std::distance(x.begin(), x.end());
@@ -152,7 +139,7 @@ public:
 		m_Allocator.deallocate(m_Start, this->capacity());
 	}
 
-	vector<T, allocator_type>& operator=(const vector<T, allocator_type> &other)
+	vector<T, allocator_type>& operator=(const FT::vector<T, allocator_type> &other)
 	{
 		// if self assignment
 		if (*this == other) return *this;
@@ -220,6 +207,7 @@ public:
 
 	const_reverse_iterator rend() const { return reverse_iterator(begin()); }
 
+	// ---------------------------------------------------------------------------
 	// 23.2.4.2 capacity:
 
 	/* Returns the number of elements in the vector. */
@@ -336,7 +324,7 @@ public:
 		iterator cur = m_Finish - 1; // cur = 마지막 원소
 		while (cur != position) {
 			// (2) 뒤에서 앞으로 swap 진행.
-			ft::swap(*(cur), *(--cur));
+			_PRIVATE::swap(*(cur), *(--cur));
 		}
 		return (cur);
 	}
@@ -345,7 +333,7 @@ public:
 	void insert(iterator position, size_type n, const T &value)
 	{
 		// (1) 뒷 부분 따로 보유.
-		ft::vector<T> tmp(position, m_Finish);
+		FT::vector<T> tmp(position, m_Finish);
 		_destroy(position, m_Finish);
 		// (2) 공간 필요시 확장.
 		if (this->size() + n >= this->capacity()) {
@@ -367,7 +355,7 @@ public:
 		// (0) first 부터 last 까지 개수 구하기
 		const difference_type sizeToCopy = std::distance(first, last);
 		// (1) 뒷 부분 따로 보유.
-		ft::vector<T> tmp(position, m_Finish);
+		FT::vector<T> tmp(position, m_Finish);
 		_destroy(position, m_Finish);
 		// (2) 공간 필요시 확장.
 		if (this->size() + sizeToCopy >= this->capacity()) {
@@ -400,7 +388,7 @@ public:
 
 		iterator cur = position;
 		while (cur != (m_Finish - 1)) {
-			ft::swap(*cur, *(++cur));
+			_PRIVATE::swap(*cur, *(++cur));
 		}
 		pop_back();
 		return (position + 1);
@@ -415,7 +403,7 @@ public:
 		// (0) first 부터 last 까지 개수 구하기
 		const difference_type sizeToReduce = std::distance(first, last);
 		// (1) 삭제 뒷 부분 따로 보유.
-		ft::vector<T> tmp(last, m_Finish);
+		FT::vector<T> tmp(last, m_Finish);
 		// (2) first 이후 부터 싹 다 제거.
 		_destroy(first, m_Finish);
 		// (3) first 로 백업본 복사.
@@ -426,12 +414,12 @@ public:
 	}
 
 
-	void swap(vector<T, allocator_type>& other)
+	void swap(FT::vector<T, allocator_type>& other)
 	{
 		// 두 벡터간 데이터 교체가 iterator만 교체해주면 되기 때문에 몹시 쉬움.
-		ft::swap(m_Start, other.m_Start);
-		ft::swap(m_Finish, other.m_Finish);
-		ft::swap(m_End_of_storage, other.m_End_of_storage);
+		_PRIVATE::swap(m_Start, other.m_Start);
+		_PRIVATE::swap(m_Finish, other.m_Finish);
+		_PRIVATE::swap(m_End_of_storage, other.m_End_of_storage);
 	}
 
 	// clear : 원소를 모두 제거 한다.
@@ -447,49 +435,58 @@ public:
 // -----------------------------------------------------------
 
 template <class T, class Allocator>
-bool operator==(const vector<T,Allocator>& x, const vector<T,Allocator>& y)
+inline FT_INLINE_VISIBILITY
+bool operator==(const FT::vector<T,Allocator>& x, const FT::vector<T,Allocator>& y)
 {
-	return x.size() == y.size() && ft::equal(x.begin(), x.end(), y.begin());
+	return x.size() == y.size() && _PRIVATE::equal(x.begin(), x.end(), y.begin());
 }
 
 template <class T, class Allocator>
-bool operator< (const vector<T,Allocator>& x, const vector<T,Allocator>& y)
+inline FT_INLINE_VISIBILITY
+bool operator!=(const FT::vector<T,Allocator>& x, const FT::vector<T,Allocator>& y)
 {
-	return ft::lexicographical_compare(x.begin(), x.end(), y.begin(), y.end());
+	return !(x == y);
 }
 
 template <class T, class Allocator>
-bool operator!=(const vector<T,Allocator>& x, const vector<T,Allocator>& y)
+inline FT_INLINE_VISIBILITY
+bool operator< (const FT::vector<T,Allocator>& x, const FT::vector<T,Allocator>& y)
 {
+	return _PRIVATE::lexicographical_compare(x.begin(), x.end(), y.begin(), y.end());
+}
 
+
+template <class T, class Allocator>
+inline FT_INLINE_VISIBILITY
+bool operator> (const FT::vector<T,Allocator>& x, const FT::vector<T,Allocator>& y)
+{
+	return y < x;
 }
 
 template <class T, class Allocator>
-bool operator> (const vector<T,Allocator>& x, const vector<T,Allocator>& y)
+inline FT_INLINE_VISIBILITY
+bool operator>=(const FT::vector<T,Allocator>& x, const FT::vector<T,Allocator>& y)
 {
-
+	return !(x < y);
 }
 
 template <class T, class Allocator>
-bool operator>=(const vector<T,Allocator>& x, const vector<T,Allocator>& y)
+inline FT_INLINE_VISIBILITY
+bool operator<=(const FT::vector<T,Allocator>& x, const FT::vector<T,Allocator>& y)
 {
-
-}
-
-template <class T, class Allocator>
-bool operator<=(const vector<T,Allocator>& x, const vector<T,Allocator>& y)
-{
-
+	return !(y < x);
 }
 
 // specialized algorithms:
+// TODO: Throw() 를 함수 옆에 했을 때 어떤 변화가 일어나는지 공부할 것
 template <class T, class Allocator>
-void swap(vector<T,Allocator>& x, vector<T,Allocator>& y)
+inline FT_INLINE_VISIBILITY
+void swap(FT::vector<T,Allocator>& x, FT::vector<T,Allocator>& y)
+	FT_NOEXCEPT_(FT_NOEXCEPT_(x.swap(y)))
 {
-
+	x.swap(y);
 }
 
-
-} // namespace ft
+FT_END_GLOBAL_NAMESPACE
 
 #endif //FT_CONTAINER_VECTOR_HPP
