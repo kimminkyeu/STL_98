@@ -86,12 +86,12 @@
 #  if __has_attribute(deprecated)
 #    define FT_DEPRECATED __attribute__ ((deprecated))
 #  elif FT_STD_VER > 11
-#    define _FT_DEPRECATED [[deprecated]]
+#    define FT_DEPRECATED [[deprecated]]
 #  else
-#    define _FT_DEPRECATED
+#    define FT_DEPRECATED
 #  endif
 #else
-#  define _FT_DEPRECATED
+#  define FT_DEPRECATED
 #endif
 
 // * set inline attribute here...
@@ -105,8 +105,8 @@
 #define FT_HAS_NO_NOEXCEPT
 #endif
 #ifndef FT_HAS_NO_NOEXCEPT
-#  define _NOEXCEPT noexcept
-#  define _NOEXCEPT_(x) noexcept(x)
+#  define NOEXCEPT noexcept
+#  define NOEXCEPT_(x) noexcept(x)
 #else
 #  define FT_NOEXCEPT throw()
 #  define FT_NOEXCEPT_(x)
