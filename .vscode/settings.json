@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "iterator": "cpp",
+        "__functional_03": "cpp",
+        "memory_resource": "cpp",
+        "functional": "cpp",
+        "memory": "cpp",
+        "vector": "cpp"
+    }
+}

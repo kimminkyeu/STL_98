@@ -22,6 +22,10 @@
 #include "ft_utility.hpp"
 #include "ft_iterator.hpp"
 
+// (1) allocator 메모리 모델이 다른 애들끼리 교환 할 수 도 있는 가능성 --> 어떻게 처리 ? --> propagate_on.... 에 대해 알아볼 것.
+// (2) allocator.destroy optional기능이라 안쓰느는게 좋다 -> 커스텀 allocator 구현자가 구현을 안했을 수 도 있음.
+// (3) c++ 98 버전 당시의 STL library source code 구하기.
+
 FT_BEGIN_GLOBAL_NAMESPACE
 
 template<typename T, class Allocator = std::allocator<T> >
@@ -38,10 +42,10 @@ public:// typedefs
 	typedef typename allocator_type::const_pointer      const_pointer;      // const _Tp* on std::allocator
 
 	// Subject : If the container has an iterator system, you must implement it.
-	typedef typename FT::random_access_iterator<std::random_access_iterator_tag, pointer>            iterator;
-	typedef typename FT::random_access_iterator<std::random_access_iterator_tag, const_pointer>      const_iterator;
-	typedef typename FT::reverse_iterator<iterator>			                                         reverse_iterator;
-	typedef typename FT::reverse_iterator<const_iterator>                                            const_reverse_iterator;
+	typedef typename FT::iterator<std::random_access_iterator_tag, pointer>            				iterator;
+	typedef typename FT::iterator<std::random_access_iterator_tag, const_pointer>     				const_iterator;
+	typedef typename FT::reverse_iterator<iterator>			                                        reverse_iterator;
+	typedef typename FT::reverse_iterator<const_iterator>                                           const_reverse_iterator;
 
 protected: // allocator instance
 	allocator_type m_Allocator;
@@ -53,13 +57,17 @@ private: // data members
 
 private: // helper functions
 
+	/* 
+	* Warn : do not use allocator.destroy -> because it's optional function !!!!
+	*/
 	// destruct every object from start to end.
 	FT_INLINE_VISIBILITY
 	void _destroy(iterator start, iterator end) FT_NOEXCEPT
 	{
 		while (start != end)
 		{
-			m_Allocator.destroy(start);
+			// m_Allocator.destroy(start);
+			start->~T();
 			start++;
 		}
 	}
@@ -422,6 +430,7 @@ public:
 		_PRIVATE::swap(m_Start, other.m_Start);
 		_PRIVATE::swap(m_Finish, other.m_Finish);
 		_PRIVATE::swap(m_End_of_storage, other.m_End_of_storage);
+		// TODO: 두 이터레이터간 교환 가능한시 반드시 체크해야 함. 
 	}
 
 	// clear : 원소를 모두 제거 한다.
@@ -483,8 +492,7 @@ bool operator<=(const FT::vector<T,Allocator>& x, const FT::vector<T,Allocator>&
 // TODO: Throw() 를 함수 옆에 했을 때 어떤 변화가 일어나는지 공부할 것
 template <class T, class Allocator>
 inline FT_INLINE_VISIBILITY
-void swap(FT::vector<T,Allocator>& x, FT::vector<T,Allocator>& y)
-	FT_NOEXCEPT_(FT_NOEXCEPT_(x.swap(y)))
+void swap(FT::vector<T,Allocator>& x, FT::vector<T,Allocator>& y) FT_NOEXCEPT_(FT_NOEXCEPT_(x.swap(y)))
 {
 	x.swap(y);
 }

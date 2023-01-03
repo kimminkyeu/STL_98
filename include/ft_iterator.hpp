@@ -6,8 +6,9 @@
 #include "__config.hpp"
 FT_BEGIN_GLOBAL_NAMESPACE
 
-// #include <iterator>
+#include <iterator> // delete later
 
+#include <stddef.h> // for ptrdiff_t
 
 // * Iterator Traits.
 // ----------------------------------------------------------------
@@ -35,11 +36,13 @@ struct iterator_traits<T*>
 
 // @ Iterator tags
 // ! 이걸 직접 정의하면 std의 iterator_tag랑 호환이 안되지 않나?
+/*
 struct input_iterator_tag {};
 struct output_iterator_tag {};
 struct forward_iterator_tag: public input_iterator_tag {};
 struct bidirectional_iterator_tag: public forward_iterator_tag {};
 struct random_access_iterator_tag: public bidirectional_iterator_tag {};
+*/
 
 
 
@@ -51,7 +54,8 @@ struct random_access_iterator_tag: public bidirectional_iterator_tag {};
 // @ basic iterator
 template<class Category, class T, class Distance = ptrdiff_t,
 		class Pointer = T*, class Reference = T&>
-class iterator
+struct iterator
+// used struct because we don't need private members.
 {
 public:
     // 24.3, primitives:
