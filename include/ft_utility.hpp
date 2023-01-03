@@ -5,28 +5,30 @@
 #ifndef FT_CONTAINER_FT_UTILITY_HPP
 #define FT_CONTAINER_FT_UTILITY_HPP
 
-// --------------------------------------------------------------------------------
-//  ft_container subject 에서 명시한 직접 구현 사항들 입니다.
-//  * template helper function을 최대한 숨기기 위해, [_PRIVATE] namespace를 이용하였습니다.
-//  자세한 namespace definition은 "__config.hpp" 소스를 참고하시기 바랍니다.
-// --------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------*
+//  ft_container subject 에서 명시한 직접 구현 사항들 입니다.                             *
+//  template helper function을 최대한 숨기기 위해, [_PRIVATE] namespace를 이용하였습니다.  *
+//  자세한 namespace definition은 "__config.hpp" 소스를 참고하시기 바랍니다.               *
+// --------------------------------------------------------------------------------*
 
 #include "__config.hpp"
 FT_BEGIN_PRIVATE_NAMESPACE
 
-
-// * m_Allocator.destroy(start);
-// --> because destroy function is optional, better call destructor directly.
-// 일단 custom allocator에서 destory와 construct를 구현하지 않을 수 있다는 전제하에 구현함.
+// * NOTE:  m_Allocator.destroy(...) 를 사용하지 않았습니다.
+// - Because destroy function is Optional, better call destructor directly.
+// - Reference : https://saco-evaluator.org.za/docs/cppreference/en/cpp/concept/Allocator.html
+// - 일단 custom allocator에서 destory와 construct를 구현하지 않을 수 있다는 전제하에 구현함.
 template <typename Tp>
-FT_DEPRECATED // since C++17
+FT_DEPRECATED // deprecated since C++17
+FT_INLINE_VISIBILITY
 inline void destroy(Tp* _pointer)
 {
     _pointer->Tp::~Tp(); // directly call destructor.
 }
 
 template <class Iterator>
-FT_DEPRECATED // since C++17
+FT_DEPRECATED // deprecated since C++17
+FT_INLINE_VISIBILITY
 inline void destroy(Iterator _first, Iterator _last)
 {
     for (; _first != _last; ++_first) {
@@ -35,18 +37,20 @@ inline void destroy(Iterator _first, Iterator _last)
 }
 
 template <typename Tp>
-FT_DEPRECATED // since C++17
+FT_DEPRECATED // deprecated since C++17
+FT_INLINE_VISIBILITY
 inline void construct(Tp* _pointer)
 {
-    // * [ placement new ] : construct objects in allocated storage.
+    // [ placement new ] : construct objects in pre-allocated storage.
     new(_pointer) Tp();
 }
 
 template <typename Tp>
-FT_DEPRECATED // since C++17
+FT_DEPRECATED // deprecated since C++17
+FT_INLINE_VISIBILITY
 inline void construct(Tp* _pointer, const Tp& _value)
 {
-    // * [ placement new ] : construct objects in allocated storage.
+    // [ placement new ] : construct objects in pre-allocated storage.
     new(_pointer) Tp(_value);
 }
 
@@ -92,7 +96,7 @@ struct pair
 // (5) std::make_pair : [ Defined in header <utility> ]
 // https://en.cppreference.com/w/cpp/utility/pair/make_pair
 template <class T1, class T2>
-ft::pair<T1, T2> make_pair( T1 t, T2 u )
+_PRIVATE::pair<T1, T2> make_pair( T1 t, T2 u )
 {
 
 }
