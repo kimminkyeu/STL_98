@@ -34,9 +34,9 @@ struct iterator_traits<T*>
 	typedef std::random_access_iterator_tag     iterator_category;
 };
 
-// @ Iterator tags
-// ! 이걸 직접 정의하면 std의 iterator_tag랑 호환이 안되지 않나?
-/*
+// @ Iterator tags ( used tags in namespace std )
+// ----------------------------------------------------------------
+/* [ Tag dispatching ]
 struct input_iterator_tag {};
 struct output_iterator_tag {};
 struct forward_iterator_tag: public input_iterator_tag {};

@@ -60,17 +60,17 @@ private: // helper functions
 	/* 
 	* Warn : do not use allocator.destroy -> because it's optional function !!!!
 	*/
-	// destruct every object from start to end.
-	FT_INLINE_VISIBILITY
-	void _destroy(iterator start, iterator end) FT_NOEXCEPT
-	{
-		while (start != end)
-		{
-			// m_Allocator.destroy(start);
-			start->~T();
-			start++;
-		}
-	}
+//	 destruct every object from start to end.
+//	FT_INLINE_VISIBILITY
+//	void _destroy(iterator start, iterator end) FT_NOEXCEPT
+//	{
+//		while (start != end)
+//		{
+			// m_Allocator.destroy(start); --> because destroy function is optional, better call destructor directly.
+//            start-> ~T();
+//			start++;
+//		}
+//	}
 
 	// data reallocation to new block of memory (force change)
 	FT_INLINE_VISIBILITY
@@ -89,7 +89,7 @@ private: // helper functions
 		iterator new_finish = std::uninitialized_copy(m_Start, m_Finish - diff, new_start);
 
 		// 3. delete original & change m_iterator to point new block
-		this->_destroy(m_Start, m_Finish);
+		_PRIVATE::destroy(m_Start, m_Finish);
 		m_Allocator.deallocate(m_Start, this->capacity());
 		m_Start = new_start;
 		m_Finish = new_finish;
@@ -145,7 +145,7 @@ public:
 
 	~vector()
 	{
-		this->_destroy(m_Start, m_Finish);
+		_PRIVATE::destroy(m_Start, m_Finish);
 		m_Allocator.deallocate(m_Start, this->capacity());
 	}
 
@@ -155,7 +155,7 @@ public:
 		if (*this == other) return *this;
 
 		// if other is larger, then need to reallocate memory
-		this->_destroy(m_Start, m_Finish);
+        _PRIVATE::destroy(m_Start, m_Finish);
 		if (other.size() > this->capacity())
 		{
 			m_Allocator.deallocate(m_Start, this->capacity());
@@ -242,7 +242,7 @@ public:
 		if (n == this->size())
 			return ;
 		else if (n < this->size())
-			_destroy(m_Start + n, m_Finish);
+			_PRIVATE::destroy(m_Start + n, m_Finish);
 		else // n > this->size()
 		{
 			if (n > this->capacity()) // if n is also greater than capacity
@@ -304,7 +304,7 @@ public:
 		if (this->size() >= this->capacity()) {
 			_reAlloc(this->capacity() + (this->capacity() / 2));
 		}
-		m_Allocator.construct(m_Finish, value);
+        _PRIVATE::construct(m_Finish, value);
 		m_Finish++;
 	}
 
@@ -344,7 +344,7 @@ public:
 	{
 		// (1) 뒷 부분 따로 보유.
 		FT::vector<T> tmp(position, m_Finish);
-		_destroy(position, m_Finish);
+		_PRIVATE::destroy(position, m_Finish);
 		// (2) 공간 필요시 확장.
 		if (this->size() + n >= this->capacity()) {
 			_reAlloc(this->capacity() + (this->capacity() / 2) + n);
@@ -354,7 +354,7 @@ public:
 		// (4) position + n 부터 백업본 복사.
 		m_Finish = std::uninitialized_copy(tmp.begin(), tmp.end(), position + n);
 		// (5) 백업본 삭제.
-		_destroy(tmp.begin(), tmp.end());
+		_PRIVATE::destroy(tmp.begin(), tmp.end());
 		m_Allocator.deallocate(tmp.begin(), tmp.capacity());
 	}
 
@@ -366,7 +366,7 @@ public:
 		const difference_type sizeToCopy = std::distance(first, last);
 		// (1) 뒷 부분 따로 보유.
 		FT::vector<T> tmp(position, m_Finish);
-		_destroy(position, m_Finish);
+		_PRIVATE::destroy(position, m_Finish);
 		// (2) 공간 필요시 확장.
 		if (this->size() + sizeToCopy >= this->capacity()) {
 			_reAlloc(this->capacity() + (this->capacity() / 2) + sizeToCopy);
@@ -376,7 +376,7 @@ public:
 		// (4) position + sizeToCopy 부터 백업본 복사.
 		m_Finish = std::uninitialized_copy(tmp.begin(), tmp.end(), position + sizeToCopy);
 		// (5) 백업본 삭제.
-		_destroy(tmp.begin(), tmp.end());
+		_PRIVATE::destroy(tmp.begin(), tmp.end());
 		m_Allocator.deallocate(tmp.begin(), tmp.capacity());
 	}
 
@@ -415,11 +415,11 @@ public:
 		// (1) 삭제 뒷 부분 따로 보유.
 		FT::vector<T> tmp(last, m_Finish);
 		// (2) first 이후 부터 싹 다 제거.
-		_destroy(first, m_Finish);
+		_PRIVATE::destroy(first, m_Finish);
 		// (3) first 로 백업본 복사.
 		m_Finish = std::uninitialized_copy(tmp.begin(), tmp.end(), m_Start);
 		// (4) 백업본 삭제.
-		_destroy(tmp.begin(), tmp.end());
+		_PRIVATE::destroy(tmp.begin(), tmp.end());
 		m_Allocator.deallocate(tmp.begin(), tmp.capacity());
 	}
 
@@ -437,7 +437,7 @@ public:
 	void clear()
 	{
 		// size()가 0으로 바뀌고, 기존 원소들은 삭제.
-		this->_destroy(m_Start, m_Finish);
+		_PRIVATE::destroy(m_Start, m_Finish);
 		m_Finish = m_Start;
 	}
 };

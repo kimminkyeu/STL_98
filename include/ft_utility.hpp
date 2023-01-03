@@ -15,6 +15,42 @@
 FT_BEGIN_PRIVATE_NAMESPACE
 
 
+// * m_Allocator.destroy(start);
+// --> because destroy function is optional, better call destructor directly.
+// 일단 custom allocator에서 destory와 construct를 구현하지 않을 수 있다는 전제하에 구현함.
+template <typename Tp>
+FT_DEPRECATED // since C++17
+inline void destroy(Tp* _pointer)
+{
+    _pointer->Tp::~Tp(); // directly call destructor.
+}
+
+template <class Iterator>
+FT_DEPRECATED // since C++17
+inline void destroy(Iterator _first, Iterator _last)
+{
+    for (; _first != _last; ++_first) {
+        destroy(&(*_first)); // pass pointer to the element.
+    }
+}
+
+template <typename Tp>
+FT_DEPRECATED // since C++17
+inline void construct(Tp* _pointer)
+{
+    // * [ placement new ] : construct objects in allocated storage.
+    new(_pointer) Tp();
+}
+
+template <typename Tp>
+FT_DEPRECATED // since C++17
+inline void construct(Tp* _pointer, const Tp& _value)
+{
+    // * [ placement new ] : construct objects in allocated storage.
+    new(_pointer) Tp(_value);
+}
+
+
 // (1) std::equal() : [ Defined in header <algorithm> ]
 // https://en.cppreference.com/w/cpp/algorithm/equal
 template< class InputIt1, class InputIt2 >
