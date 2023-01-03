@@ -8,7 +8,9 @@
 
 // --------------------------------------------------------------------------------------------------------------------
 // [참고 0. std::vector ]
-// #include <vector>
+ #include <vector>
+ #include <list>
+
 // [참고 1. Cherno ] 		: https://www.youtube.com/watch?v=ryRf4Jh_YC0&t=1354s
 // [참고 2. gcc-mirror ]	    : https://github.com/gcc-mirror/gcc/blob/master/libstdc%2B%2B-v3/include/bits/stl_vector.h
 // [참고 3. C++ Standard ] 	: https://www.lirmm.fr/~ducour/Doc-objets/ISO+IEC+14882-1998.pdf
@@ -25,29 +27,29 @@ FT_BEGIN_GLOBAL_NAMESPACE
 template<typename T, class Allocator = std::allocator<T> >
 class vector
 {
-public: // typedefs
-	typedef T											value_type;
-	typedef Allocator							        allocator_type;
-	typedef typename allocator_type::size_type			size_type;          // size_t on std::allocator
-	typedef typename allocator_type::difference_type	difference_type;    // ptrdiff_t on std::allocator
-	typedef typename allocator_type::reference       	reference;
-    typedef typename allocator_type::const_reference	const_reference;
-	typedef typename allocator_type::pointer			pointer;            // _Tp* on std::allocator
-	typedef typename allocator_type::const_pointer		const_pointer;      // const _Tp* on std::allocator
+public:// typedefs
+	typedef T                                           value_type;
+	typedef Allocator                                   allocator_type;
+	typedef typename allocator_type::size_type          size_type;          // size_t n std::allocator
+	typedef typename allocator_type::difference_type    difference_type;    // ptrdiff_t on std::allocator
+	typedef typename allocator_type::reference          reference;
+    typedef typename allocator_type::const_reference    const_reference;
+	typedef typename allocator_type::pointer            pointer;            // _Tp* on std::allocator
+	typedef typename allocator_type::const_pointer      const_pointer;      // const _Tp* on std::allocator
 
 	// Subject : If the container has an iterator system, you must implement it.
-	typedef typename FT::iterator<pointer>            iterator;
-	typedef typename FT::iterator<const_pointer>      const_iterator;
-	typedef typename FT::reverse_iterator<iterator>			reverse_iterator;
-	typedef typename FT::reverse_iterator<const_iterator>		const_reverse_iterator;
+	typedef typename FT::random_access_iterator<std::random_access_iterator_tag, pointer>            iterator;
+	typedef typename FT::random_access_iterator<std::random_access_iterator_tag, const_pointer>      const_iterator;
+	typedef typename FT::reverse_iterator<iterator>			                                         reverse_iterator;
+	typedef typename FT::reverse_iterator<const_iterator>                                            const_reverse_iterator;
 
-protected:
+protected: // allocator instance
 	allocator_type m_Allocator;
 
 private: // data members
 	iterator m_Start;           // begin
 	iterator m_Finish;          // end
-	iterator m_End_of_storage;  // end of memory
+	iterator m_End_of_storage;  // end of memory (capacity)
 
 private: // helper functions
 

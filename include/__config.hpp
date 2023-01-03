@@ -49,6 +49,9 @@
 // * setting inline attributes
 
 // @ FT_ALWAYS_INLINE
+/* - Ignore -fno-inline (this is what the documentation says).
+   - Ignore the inlining limits hence inlining the function regardless. It also inlines functions with alloca calls, which inline keyword never does.
+   - Not produce an external definition of a function with external linkage if marked with always_inline. */
 #define FT_ALWAYS_INLINE    __attribute__ ((__always_inline__))
 
 // @ FT_INTERNAL_LINKAGE
@@ -59,8 +62,7 @@
 #  define FT_INTERNAL_LINKAGE FT_ALWAYS_INLINE
 #endif
 
-// @ FT_HIDDEN
-// (1) hidden일 경우 해당 함수가 라이브러리 외부로 노출되지 않는다.
+// @ FT_HIDDEN // (1) hidden일 경우 해당 함수가 라이브러리 외부로 노출되지 않는다.
 // ? 근데 언제, 아땋게 쓰이는지는 아직 모르겠음. --> 더 알아볼 것.
 #ifndef FT_HIDDEN
 #  if !defined(FT_DISABLE_VISIBILITY_ANNOTATIONS)
@@ -69,6 +71,42 @@
 #    define FT_HIDDEN
 #  endif
 #endif
+
+// @ function visibility in shared library
+#ifndef FT_FUNC_VIS
+#  if !defined(FT_DISABLE_VISIBILITY_ANNOTATIONS)
+#    define FT_FUNC_VIS __attribute__ ((__visibility__("default")))
+#  else
+#    define FT_FUNC_VIS
+#  endif
+#endif
+
+// @ type visibility in shared library
+#ifndef FT_TYPE_VIS
+#  if !defined(FT_DISABLE_VISIBILITY_ANNOTATIONS)
+#    define FT_TYPE_VIS __attribute__ ((__visibility__("default")))
+#  else
+#    define FT_TYPE_VIS
+#  endif
+#endif
+
+// @ template visibility in shared library
+#ifndef FT_TEMPLATE_VIS
+#  if !defined(FT_DISABLE_VISIBILITY_ANNOTATIONS)
+#    if __has_attribute(__type_visibility__)
+#      define FT_TEMPLATE_VIS __attribute__ ((__type_visibility__("default")))
+#    else
+#      define FT_TEMPLATE_VIS __attribute__ ((__visibility__("default")))
+#    endif
+#  else
+#    define FT_TEMPLATE_VIS
+#  endif
+#endif
+
+
+
+
+
 
 // * About Enable-if function. why???
 /*
@@ -81,7 +119,7 @@
 
 // * Deprecation macros.
 // Deprecations warnings are always enabled, except when users explicitly opt-out
-// by defining _LIBCPP_DISABLE_DEPRECATION_WARNINGS.
+// by defining FT_DISABLE_DEPRECATION_WARNINGS.
 #if !defined(FT_DISABLE_DEPRECATION_WARNINGS)
 #  if __has_attribute(deprecated)
 #    define FT_DEPRECATED __attribute__ ((deprecated))
@@ -95,6 +133,7 @@
 #endif
 
 // * set inline attribute here...
+
 #define FT_INLINE_VISIBILITY    FT_ALWAYS_INLINE
 
 
