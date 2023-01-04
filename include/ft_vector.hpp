@@ -8,8 +8,9 @@
 
 // --------------------------------------------------------------------------------------------------------------------
 // [참고 0. std::vector ]
- #include <vector>
- #include <list>
+//  #include <algorithm>
+// #include <vector>
+//  #include <list>
 
 // [참고 1. Cherno ] 		: https://www.youtube.com/watch?v=ryRf4Jh_YC0&t=1354s
 // [참고 2. gcc-mirror ]	    : https://github.com/gcc-mirror/gcc/blob/master/libstdc%2B%2B-v3/include/bits/stl_vector.h
@@ -47,6 +48,7 @@ public:// typedefs
 	typedef typename FT::reverse_iterator<iterator>			                                        reverse_iterator;
 	typedef typename FT::reverse_iterator<const_iterator>                                           const_reverse_iterator;
 
+
 protected: // allocator instance
 	allocator_type m_Allocator;
 
@@ -57,7 +59,7 @@ private: // data members
 
 private: // helper functions
 
-	/* 
+	/*
 	* Warn : do not use allocator.destroy -> because it's optional function !!!!
 	*/
 //	 destruct every object from start to end.
@@ -110,7 +112,7 @@ public:
 	explicit vector(size_type n, const T &value = T(), const allocator_type& _allocator = allocator_type())
 	{
 		// * 이렇게 호출해도 되는겨? Allocator instance가 없는데?
-		m_Start = _allocator.allocate(n);
+		m_Start = _allocator.allocate(n); // -> 이게 안된다고 하심. 왜냐면 const라서.
 		std::uninitialized_fill_n(m_Start, n, value); // using function at <memory.h>, Cpp98
 		m_Finish = m_Start + n;
 		m_End_of_storage = m_Finish;
@@ -224,7 +226,15 @@ public:
 	size_type size() const { return size_type(end() - begin()); }
 
 	/* Returns the maximum object size supported by the allocator */
-	size_type max_size() const { return m_Allocator.max_size(); }
+	size_type max_size() const {
+		// NOTE:  do not use allocator's max_size(), because it's optinal function call
+		//  return m_Allocator.max_size();
+		//  REF (1) : https://en.cppreference.com/w/cpp/memory/allocator/max_size
+		//  REF (2) : https://en.cppreference.com/w/cpp/named_req/Allocator --> optional.
+
+		// from max_size cpp reference
+		return (std::numeric_limits<size_type>::max() / sizeof(value_type));
+	}
 
 	/* Returns the size of the storage space currently allocated for the vector, expressed in terms of elements. */
 	size_type capacity() const { return m_End_of_storage - m_Start; }
@@ -305,7 +315,7 @@ public:
 			_reAlloc(this->capacity() + (this->capacity() / 2));
 		}
         _PRIVATE::construct(m_Finish, value);
-		m_Finish++;
+		++m_Finish;
 	}
 
 	void pop_back()
@@ -313,11 +323,12 @@ public:
 		if (this->empty()) {
 			return ;
 		}
-		m_Allocator.destory(--m_Finish);
+		// m_Allocator.destory(--m_Finish);
+		_PRIVATE::destroy(--m_Finish);
 	}
 
 	// TODO: 이건 성능 검증을 좀 해야 겠다.
-	iterator insert(iterator position, const T &value)
+	iterator insert(iterator _position, const T& _value)
 	{
 		// 1 2 3 .
 
@@ -330,6 +341,7 @@ public:
 		//   c
 		// 1 A 2 3 .
 
+		/* --> 원래 아래 코드로 짰으나, 비효율적인 코드
 		push_back(value); // (1) 일단 맨 뒤에 넣고.
 		iterator cur = m_Finish - 1; // cur = 마지막 원소
 		while (cur != position) {
@@ -337,6 +349,13 @@ public:
 			_PRIVATE::swap(*(cur), *(--cur));
 		}
 		return (cur);
+		*/
+		if (this->size() >= this->capacity()) {
+			_reAlloc(this->capacity() + (this->capacity() / 2));
+		}
+		++m_Finish;
+		std::copy_backward(_position, end() - 2, end() - 1);
+		*_position = _value;
 	}
 
 	// TODO: 굳이 destroy 를 해야 하나? 그냥 덮어 쓰면 안되나...
@@ -430,7 +449,7 @@ public:
 		_PRIVATE::swap(m_Start, other.m_Start);
 		_PRIVATE::swap(m_Finish, other.m_Finish);
 		_PRIVATE::swap(m_End_of_storage, other.m_End_of_storage);
-		// TODO: 두 이터레이터간 교환 가능한시 반드시 체크해야 함. 
+		// TODO: 두 이터레이터간 교환 가능한시 반드시 체크해야 함.
 	}
 
 	// clear : 원소를 모두 제거 한다.
@@ -492,10 +511,12 @@ bool operator<=(const FT::vector<T,Allocator>& x, const FT::vector<T,Allocator>&
 // TODO: Throw() 를 함수 옆에 했을 때 어떤 변화가 일어나는지 공부할 것
 template <class T, class Allocator>
 inline FT_INLINE_VISIBILITY
-void swap(FT::vector<T,Allocator>& x, FT::vector<T,Allocator>& y) FT_NOEXCEPT_(FT_NOEXCEPT_(x.swap(y)))
+// 조건부 noexcept
+void swap(FT::vector<T,Allocator>& x, FT::vector<T,Allocator>& y) FT_NOEXCEPT_(FT_NOEXCEPT_(x.swap(y)) /* && FT_NOEXCEPT_(...) */)
 {
 	x.swap(y);
 }
+
 
 FT_END_GLOBAL_NAMESPACE
 
