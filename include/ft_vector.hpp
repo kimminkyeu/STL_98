@@ -29,6 +29,12 @@
 
 FT_BEGIN_GLOBAL_NAMESPACE
 
+// ---------------------------------------------------------------
+// |                                                             |
+// |                   Vector implementation                     |
+// |                                                             |
+// ---------------------------------------------------------------
+
 template<typename T, class Allocator = std::allocator<T> >
 class vector
 {
@@ -42,11 +48,13 @@ public:// typedefs
 	typedef typename allocator_type::pointer            pointer;            // _Tp* on std::allocator
 	typedef typename allocator_type::const_pointer      const_pointer;      // const _Tp* on std::allocator
 
-	// Subject : If the container has an iterator system, you must implement it.
-	typedef typename FT::iterator<std::random_access_iterator_tag, pointer>            				iterator;
-	typedef typename FT::iterator<std::random_access_iterator_tag, const_pointer>     				const_iterator;
-	typedef typename FT::reverse_iterator<iterator>			                                        reverse_iterator;
-	typedef typename FT::reverse_iterator<const_iterator>                                           const_reverse_iterator;
+    typedef vector<T, Allocator>    vector_type;
+
+	typedef typename FT::random_access_iterator<pointer, vector_type>            				iterator;
+	typedef typename FT::random_access_iterator<const_pointer, vector_type>     				const_iterator;
+
+	typedef typename FT::reverse_iterator<iterator>			                                    reverse_iterator;
+	typedef typename FT::reverse_iterator<const_iterator>                                       const_reverse_iterator;
 
 
 protected: // allocator instance

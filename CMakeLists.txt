@@ -12,7 +12,7 @@ add_link_options(-Wall -Wextra -Wall -g3 -fsanitize=address)
 
 set(TEST_SRC_FILES
         test/main.cpp
-        include/ft_utility.hpp include/__config.hpp)
+        include/ft_utility.hpp include/__config.hpp include/ft_vector_base.hpp)
 
 add_executable(tester
         # ${STL_SRC_FILES}
