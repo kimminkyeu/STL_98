@@ -18,17 +18,16 @@ FT_BEGIN_PRIVATE_NAMESPACE
 // - Because destroy function is Optional, better call destructor directly.
 // - Reference : https://saco-evaluator.org.za/docs/cppreference/en/cpp/concept/Allocator.html
 // - 일단 custom allocator에서 destory와 construct를 구현하지 않을 수 있다는 전제하에 구현함.
+
 template <typename Tp>
-FT_DEPRECATED // deprecated since C++17
-FT_INLINE_VISIBILITY
+// FT_DEPRECATED // deprecated since C++17
 inline void destroy(Tp* _pointer)
 {
     _pointer->Tp::~Tp(); // directly call destructor.
 }
 
 template <class Iterator>
-FT_DEPRECATED // deprecated since C++17
-FT_INLINE_VISIBILITY
+// FT_DEPRECATED // deprecated since C++17
 inline void destroy(Iterator _first, Iterator _last)
 {
     for (; _first != _last; ++_first) {
@@ -37,8 +36,7 @@ inline void destroy(Iterator _first, Iterator _last)
 }
 
 template <typename Tp>
-FT_DEPRECATED // deprecated since C++17
-FT_INLINE_VISIBILITY
+// FT_DEPRECATED // deprecated since C++17
 inline void construct(Tp* _pointer)
 {
     // [ placement new ] : construct objects in pre-allocated storage.
@@ -46,8 +44,7 @@ inline void construct(Tp* _pointer)
 }
 
 template <typename Tp>
-FT_DEPRECATED // deprecated since C++17
-FT_INLINE_VISIBILITY
+// FT_DEPRECATED // deprecated since C++17
 inline void construct(Tp* _pointer, const Tp& _value)
 {
     // [ placement new ] : construct objects in pre-allocated storage.

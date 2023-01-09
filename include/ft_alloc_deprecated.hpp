@@ -11,6 +11,40 @@
 
 FT_BEGIN_GLOBAL_NAMESPACE
 
+// !--------------------------------------------------------------
+// !                                                             |
+// !          API Evolution and Deprecation History              |
+// !                                                             |
+// !---------------------------------------------------------------
+// Ref 1 : https://github.com/lattera/openbsd/blob/master/gnu/lib/libstdc%2B%2B/libstdc%2B%2B/include/bits/stl_alloc.h
+// Ref 2 : https://gcc.gnu.org/onlinedocs/gcc-8.3.0/libstdc++/manual/manual/api.html
+
+// ! Log : 기껏 옛날 버전 찾아서 구조 연구하면서 왜 그럴까.. 고민 겁나 했는디, 결국 deprecated된 기능이였다...
+// ! S_instanceless 같은 거 말이다...
+
+// ! Previously, all allocators were written to the SGI style, and all STL containers expected this interface.
+// ! This interface had a traits class called _Alloc_traits that attempted to provide more information
+// ! for compile-time allocation selection and optimization.
+
+// ! This traits class had another allocator wrapper, __simple_alloc<T,A>, which was a wrapper around -
+// ! another allocator, A, which itself is an allocator for instances of T.
+
+// ! But wait, there's more: __allocator<T,A> is another adapter.
+// ! Many of the provided allocator classes were SGI style: such classes can be changed to a -
+// ! conforming interface with this wrapper: __allocator<T, __alloc> is thus the same as allocator<T>.
+
+
+
+
+
+
+
+
+
+
+
+
+
 // ---------------------------------------------------------------
 // |                                                             |
 // |              simple_alloc  implementation                   |
@@ -18,7 +52,6 @@ FT_BEGIN_GLOBAL_NAMESPACE
 // ---------------------------------------------------------------
 // #include "../libstdc++-2.90.8/stl/bits/stl_alloc.h"
 
-/*
 // * 이 class는 객체 instance를 만들 필요가 없는 경우, r-value로 객체를 생성해서 해당 함수를 호출한다.
 template<class Tp, class Alloc>
 class simple_alloc
@@ -47,7 +80,6 @@ public:
       Alloc::deallocate(_p, sizeof (Tp));
     }
 };
-*/
 
 
 
@@ -99,7 +131,10 @@ struct allocator_traits<Tp, std::allocator<Tp1> > // only when std::allocator, t
     static const bool S_instanceless    = true;
     typedef typename std::allocator<Tp1>  alloc;
     typedef std::allocator<Tp>            allocator_type;
-    // typedef simple_alloc<Tp, alloc>       Alloc_type; // use allocator's alloc.
+
+    // ? ------------------------------------
+    typedef simple_alloc<Tp, alloc>       Alloc_type; // use allocator's alloc.
+    // ? ------------------------------------
 };
 
 

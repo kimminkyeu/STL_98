@@ -10,10 +10,78 @@
 #include "__config.hpp"
 #include "ft_utility.hpp"
 #include "ft_iterator.hpp"
-#include "ft_vector_base.hpp"
-
 
 FT_BEGIN_GLOBAL_NAMESPACE
+
+template <class Tp, class Allocator>
+class Vector_alloc_base
+{
+public: // typedefs
+    typedef Allocator   allocator_type;
+
+protected:
+//    typedef typename    allocator_type::pointer           pointer;
+//    typedef typename    allocator_type::const_pointer     const_pointer;
+
+public: // constructor & destructor
+    explicit Vector_alloc_base(const allocator_type& _a)
+            : m_Data_allocator(_a), m_Start(0), m_Finish(0), m_End_of_storage(0)
+    {}
+
+protected:
+    // ------------------------------
+    allocator_type m_Data_allocator;
+    // ------------------------------
+    Tp* m_Start;
+//    pointer m_Start;
+//    pointer m_Finish;
+//    pointer m_;
+    Tp* m_Finish;
+    Tp* m_End_of_storage;
+
+    Tp* m_Allocate(size_t _n)
+    {
+        return m_Data_allocator.allocate(_n);
+    }
+
+    void m_Deallocate(Tp* _p, size_t _n)
+    {
+        if (_p) { m_Data_allocator.deallocate(_p, _n); }
+    }
+
+public:
+    allocator_type get_allocator() const
+    {
+        return m_Data_allocator;
+    }
+};
+
+
+template <class Tp, class Alloc>
+class Vector_base : public Vector_alloc_base<Tp, Alloc>
+{
+public:
+    typedef Vector_alloc_base<Tp, Alloc>                _Alloc_Base;
+    typedef typename _Alloc_Base::allocator_type        allocator_type;
+
+    explicit Vector_base(const allocator_type& _a)
+            : _Alloc_Base(_a)
+    {}
+
+    explicit Vector_base(size_t _n, const allocator_type& _a)
+            : _Alloc_Base(_a)
+    {
+        _Alloc_Base::m_Start = _Alloc_Base::m_allocate(_n);
+        _Alloc_Base::m_Finish = _Alloc_Base::m_Start;
+        _Alloc_Base::m_End_of_storage = _Alloc_Base::m_Start + _n;
+    }
+
+    ~Vector_base()
+    {
+        _Alloc_Base::m_Deallocate(_Alloc_Base::m_Start, _Alloc_Base::m_End_of_storage - _Alloc_Base::m_Start);
+    }
+};
+
 
 // ---------------------------------------------------------------
 // |                                                             |
@@ -22,10 +90,10 @@ FT_BEGIN_GLOBAL_NAMESPACE
 // ---------------------------------------------------------------
 
 template<typename T, class Allocator = std::allocator<T> >
-class vector : protected _PRIVATE::Vector_base<T, Allocator>
+class vector : protected Vector_base<T, Allocator>
 {
 private:
-	typedef _PRIVATE::Vector_base<T, Allocator>			_Base;
+	typedef Vector_base<T, Allocator>			        _Base;
     typedef vector<T, Allocator>    					vector_type;
 
 public:
@@ -48,15 +116,14 @@ public:
 	typedef typename FT::reverse_iterator<const_iterator>                                       const_reverse_iterator;
 
 public:
-	allocator_type get_allocator() const
-	{
-		return _Base::get_allocator();
-	}
+//	allocator_type get_allocator() const
+//	{
+//		return _Base::get_allocator();
+//	}
 
 private: // helper functions
 
 	// data reallocation to new block of memory (force change)
-
 	void _reAlloc(size_t newCapacity)
 	{
 		if (newCapacity == this->capacity())
@@ -64,19 +131,19 @@ private: // helper functions
 
 		// 1. allocate a new block of memory
 		// iterator new_start = m_Allocator.allocate(newCapacity);
-		iterator new_start = this->m_Allocate(newCapacity);
+		iterator new_start = _Base::m_Allocate(newCapacity);
 
 		// 2. copy/move old elements into new block
 		size_type diff = 0;
 		if (newCapacity < this->size()) // if reallocate to smaller block
 			diff = this->size() - newCapacity;
-		iterator new_finish = std::uninitialized_copy(this->m_Start, this->m_Finish - diff, new_start);
+		iterator new_finish = std::uninitialized_copy(_Base::m_Start, _Base::m_Finish - diff, new_start);
 
 		// 3. delete original & change m_iterator to point new block
 		_PRIVATE::destroy(this->m_Start, this->m_Finish);
-		this->m_Deallocate(this->m_Start, this->capacity());
-		this->m_Start = new_start;
-		this->m_Finish = new_finish;
+        _Base::m_Deallocate(this->m_Start, this->capacity());
+		_Base::m_Start = new_start;
+		_Base::m_Finish = new_finish;
 	}
 
 public:
@@ -106,7 +173,7 @@ public:
 	}
 
 	// copy constructor via other vector
-	vector(const FT::vector<T, allocator_type> &x)
+	explicit vector(const FT::vector<T, allocator_type> &x)
 		: _Base(x.size(), x.get_allocator())
 	{
 		this->m_Finish = std::uninitialized_copy(x.begin(), x.end(), this->m_Start);
@@ -117,7 +184,8 @@ public:
 		_PRIVATE::destroy(this->m_Start, this->m_Finish);
 	}
 
-	vector<T, allocator_type>& operator=(const FT::vector<T, allocator_type> &other)
+//	vector<T, allocator_type>& operator=(const FT::vector<T, allocator_type> &other)
+    vector_type& operator=(const vector_type& other)
 	{
 		// if self assignment
 		if (*this == other) return *this;
@@ -165,13 +233,13 @@ public:
 	// ---------------------------------------------------------------------------
 	// iterators:
 
-	iterator begin() { return this->m_Start; }
+	iterator begin() { return iterator(this->m_Start); }
 
-	const_iterator begin() const { return this->m_Start; }
+	const_iterator begin() const { return iterator(this->m_Start); }
 
-	iterator end() { return this->m_Finish; }
+	iterator end() { return iterator(this->m_Finish); }
 
-	const_iterator end() const { return this->m_Finish; }
+	const_iterator end() const { return iterator(this->m_Finish); }
 
 	reverse_iterator rbegin() { return reverse_iterator(end()); }
 

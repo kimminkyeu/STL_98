@@ -99,11 +99,22 @@ public: // @ Using directives
         // Ref_(1) : https://stackoverflow.com/questions/51883423/c-using-and-using-typename-in-a-header-file
         // Ref_(2) : https://en.cppreference.com/w/cpp/language/namespace#Using-directives
         // "using directive" is for using typenames defined in inner namespace.
-    using typename FT::iterator_traits<Iterator>::iterator_category;
-    using typename FT::iterator_traits<Iterator>::value_type;
-    using typename FT::iterator_traits<Iterator>::difference_type;
-    using typename FT::iterator_traits<Iterator>::pointer;
-    using typename FT::iterator_traits<Iterator>::reference;
+
+//    using typename FT::iterator_traits<Iterator>::iterator_category;
+//    using typename FT::iterator_traits<Iterator>::value_type;
+//    using typename FT::iterator_traits<Iterator>::difference_type;
+//    using typename FT::iterator_traits<Iterator>::pointer;
+//    using typename FT::iterator_traits<Iterator>::reference;
+    typedef typename FT::iterator_traits<Iterator>      Traits;
+    typedef typename Traits::iterator_category          iterator_category;
+    typedef typename Traits::value_type                 value_type;
+    typedef typename Traits::difference_type            difference_type;
+    typedef typename Traits::pointer                    pointer;
+    typedef typename Traits::reference                  reference;
+
+
+
+
 
 public: // typedefs
     typedef random_access_iterator<Iterator, Container> random_access_iterator_type;
@@ -112,89 +123,86 @@ public: // constructor & destructor
 
     // NOTE:  원래 base()는 reverse_iterator에 있는 애들이다.
     // base는 wrapper class에서 원본을 찾아 제공하기 위한 수단이다.
-    FT_INLINE_VISIBILITY
-    const Iterator& base() const FT_NOEXCEPT
+
+    const Iterator& base() const
     {
         return m_Current;
     }
 
     // constructor
-    FT_INLINE_VISIBILITY
-    random_access_iterator() FT_NOEXCEPT
+    random_access_iterator()
         : m_Current()
     {}
-
     // constructor Wrapping
-    FT_INLINE_VISIBILITY
-    explicit random_access_iterator(const Iterator& _iterator_in) FT_NOEXCEPT
+
+    explicit random_access_iterator(const Iterator& _iterator_in)
         : m_Current(_iterator_in)
     {}
 
     // copy constructor
     template<typename Iter>
-    FT_INLINE_VISIBILITY
-    explicit random_access_iterator(const random_access_iterator<Iter, Container>& _iterator_in) FT_NOEXCEPT
+    explicit random_access_iterator(const random_access_iterator<Iter, Container>& _iterator_in)
         : m_Current(_iterator_in.base()) // wrapper가 감싸고 있는 부분을 깊은 복사하는 것.
     {}
 
 public: // operator
 
-    FT_INLINE_VISIBILITY //. *normal_itr
-    reference operator*() const FT_NOEXCEPT
+     //. *normal_itr
+    reference operator*() const
     { return (*m_Current); }
 
-    FT_INLINE_VISIBILITY //. (normal_itr->)
-    pointer operator->() const FT_NOEXCEPT
+     //. (normal_itr->)
+    pointer operator->() const
     { return m_Current; }
 
-    FT_INLINE_VISIBILITY
-    random_access_iterator_type operator++(int) FT_NOEXCEPT
+
+    random_access_iterator_type operator++(int)
     { return random_access_iterator(m_Current++); }
 
-    FT_INLINE_VISIBILITY
-    random_access_iterator_type& operator++() FT_NOEXCEPT
+
+    random_access_iterator_type& operator++()
     { ++m_Current; return *this; }
 
-    FT_INLINE_VISIBILITY
-    random_access_iterator_type operator--(int) FT_NOEXCEPT
+
+    random_access_iterator_type operator--(int)
     { return random_access_iterator(m_Current--); }
 
-    FT_INLINE_VISIBILITY
-    random_access_iterator_type& operator--() FT_NOEXCEPT
+
+    random_access_iterator_type& operator--()
     { --m_Current; return *this; }
 
 public: // random access iterator requirements
 
-    FT_INLINE_VISIBILITY
-    reference operator[](const difference_type& _index) const FT_NOEXCEPT
+
+    reference operator[](const difference_type& _index) const
     { return m_Current[_index]; }
 
-    FT_INLINE_VISIBILITY
-    random_access_iterator_type operator+=(const difference_type& _index) FT_NOEXCEPT
+
+    random_access_iterator_type operator+=(const difference_type& _index)
     {
         m_Current += _index;
         return *this;
     }
 
-    FT_INLINE_VISIBILITY
-    random_access_iterator_type operator+(const difference_type& _index) const FT_NOEXCEPT
+
+    random_access_iterator_type operator+(const difference_type& _index) const
     { return random_access_iterator(m_Current + _index); }
 
-    FT_INLINE_VISIBILITY
-    random_access_iterator_type operator-=(const difference_type& _index) FT_NOEXCEPT
+
+    random_access_iterator_type operator-=(const difference_type& _index)
     {
         m_Current -= _index;
         return *this;
     }
 
     // iter - n
-    FT_INLINE_VISIBILITY
-    random_access_iterator_type operator-(const difference_type& _index) const FT_NOEXCEPT
+
+    random_access_iterator_type operator-(const difference_type& _index) const
     { return random_access_iterator(m_Current - _index); }
 
     // iter1 - iter2
-    FT_INLINE_VISIBILITY
-    difference_type operator-(const random_access_iterator_type& _other_iterator) const FT_NOEXCEPT
+
+    difference_type operator-(const random_access_iterator_type& _other_iterator) const
     { return (*this).m_Current - _other_iterator.m_Current; }
 };
 

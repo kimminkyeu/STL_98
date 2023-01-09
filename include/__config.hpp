@@ -140,8 +140,6 @@
 
 #define FT_INLINE_VISIBILITY    FT_ALWAYS_INLINE
 
-
-
 // ---------------------------------------------------------------------------------------------
 // * because C++98 has no "noexcept" keyword ...
 #if !(__has_feature(cxx_noexcept))
