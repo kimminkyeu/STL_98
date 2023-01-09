@@ -157,7 +157,8 @@
 			"sourceIndexes" : 
 			[
 				1,
-				2
+				2,
+				3
 			]
 		}
 	],
@@ -177,6 +178,11 @@
 		{
 			"backtrace" : 1,
 			"path" : "include/__config.hpp",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"path" : "include/ft_vector_base.hpp",
 			"sourceGroupIndex" : 1
 		}
 	],
