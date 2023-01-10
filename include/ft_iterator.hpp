@@ -258,14 +258,6 @@ operator+(typename random_access_iterator<_Iterator, _Container>::difference_typ
 
 
 
-/*-------------------------------------------------------------------------
-template<typename _IteratorL, typename _IteratorR, typename _Container>
-inline typename random_access_iterator<_IteratorL, _Container>::difference_type
-operator-(const random_access_iterator<_IteratorL, _Container>& __lhs,
-                const random_access_iterator<_IteratorR, _Container>& __rhs)
-{ return __rhs.m_Current - __lhs.m_Current; } */
-
-
 // ---------------------------------------------------------------
 // |                                                             |
 // |              Reverse Iterator implementation                |
@@ -273,10 +265,7 @@ operator-(const random_access_iterator<_IteratorL, _Container>& __lhs,
 // ---------------------------------------------------------------
 // This is the new version of reverse_iterator, as defined in the draft C++ standard.
 // It relies on the iterator_traits template, which in turn relies on partial specialization.
-// The class reverse_bidirectional_iterator is no longer part of the draft standard,
-// but it is retained for backward compatibility.
 // Ref (1) : https://en.cppreference.com/w/cpp/iterator/reverse_iterator
-
 
 template <class Iterator>
 class reverse_iterator
