@@ -447,7 +447,7 @@ public:
 
 		iterator cur = position;
 		while (cur != (this->m_Finish - 1)) {
-			_PRIVATE::swap(*cur, *(++cur));
+			FT::swap(*cur, *(++cur));
 		}
 		pop_back();
 		return (position + 1);
@@ -476,9 +476,9 @@ public:
 	void swap(FT::vector<T, allocator_type>& other)
 	{
 		// 두 벡터간 데이터 교체가 iterator만 교체해주면 되기 때문에 몹시 쉬움.
-		_PRIVATE::swap(this->m_Start, other.m_Start);
-		_PRIVATE::swap(this->m_Finish, other.m_Finish);
-		_PRIVATE::swap(this->m_End_of_storage, other.m_End_of_storage);
+		FT::swap(this->m_Start, other.m_Start);
+		FT::swap(this->m_Finish, other.m_Finish);
+		FT::swap(this->m_End_of_storage, other.m_End_of_storage);
 		// TODO: 두 이터레이터간 교환 가능한시 반드시 체크해야 함.
 	}
 
@@ -498,7 +498,7 @@ template <class T, class Allocator>
 inline
 bool operator==(const FT::vector<T,Allocator>& x, const FT::vector<T,Allocator>& y)
 {
-	return x.size() == y.size() && _PRIVATE::equal(x.begin(), x.end(), y.begin());
+	return x.size() == y.size() && FT::equal(x.begin(), x.end(), y.begin());
 }
 
 template <class T, class Allocator>
@@ -512,7 +512,7 @@ template <class T, class Allocator>
 inline
 bool operator< (const FT::vector<T,Allocator>& x, const FT::vector<T,Allocator>& y)
 {
-	return _PRIVATE::lexicographical_compare(x.begin(), x.end(), y.begin(), y.end());
+	return FT::lexicographical_compare(x.begin(), x.end(), y.begin(), y.end());
 }
 
 
