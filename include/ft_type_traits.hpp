@@ -1,6 +1,7 @@
 #ifndef FT_CONTAINER_TYPE_TRAITS_HPP
 #define FT_CONTAINER_TYPE_TRAITS_HPP
 
+#include <cstddef>
 #include "__config.hpp"
 
 FT_BEGIN_GLOBAL_NAMESPACE
@@ -8,8 +9,12 @@ FT_BEGIN_GLOBAL_NAMESPACE
 
 // -------------------------------------------------------
 // |                                                     |
-// |        Template 특수화를 이용해서 부리는 꼼수              |
+// |   Template 특수화를 이용해서 부리는 꼼수                   |
 // |                                                     |
+// |   [SFINAE]                                          |
+// |   substitute failure is not an error                |
+// |   Template 치환에 실패한 경우 error를 발생히시키지 않고      |
+// |   단순히 오버로딩 대상에서 제외한다.                        |
 // -------------------------------------------------------
 
 // * (0) std::enable_if : [ Defined in header <type_traits> ]
@@ -17,12 +22,13 @@ FT_BEGIN_GLOBAL_NAMESPACE
 template <bool, typename T = void>
 struct enable_if {}; // if empty struct, member type doesn't exist.
 
-// template specialization if bool
+// template specialization if bool is true.
 template <typename T>
 struct enable_if<true, T> // only if true, then member type exists.
 {
 	typedef T type;
 };
+
 
 // * ---------------------------------------------------------------
 // * [ How to use ]                                                |
@@ -32,6 +38,8 @@ struct enable_if<true, T> // only if true, then member type exists.
 // *                   true or false                               |
 // *                                                               |
 // *! : (1) enable_if< true >::type   --> type doesn't exist. (X)  |
+//                                         (오버로딩 후보에서 제외)      |
+// *                                                               |
 // *? : (2) enable_if< flase >::type  --> type exists. (O)         |
 // * ---------------------------------------------------------------
 
@@ -46,11 +54,11 @@ struct enable_if<true, T> // only if true, then member type exists.
 template <class _Tp, _Tp __v>
 struct integral_constant
 {
-  static const _Tp      		value = __v;
+  // ----------------------------------------
+  static const _Tp      		  value = __v; // --> we use this value at enable_if
+  // ----------------------------------------
   typedef _Tp               	value_type;
   typedef integral_constant		type;
-
-  operator value_type() const {return value;}
 };
 
 typedef integral_constant<bool,true>	true_type;

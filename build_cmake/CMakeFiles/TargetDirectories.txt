@@ -1,3 +1,0 @@
-/goinfre/minkyeki/mySTL/build_cmake/CMakeFiles/tester.dir
-/goinfre/minkyeki/mySTL/build_cmake/CMakeFiles/edit_cache.dir
-/goinfre/minkyeki/mySTL/build_cmake/CMakeFiles/rebuild_cache.dir

@@ -5,9 +5,9 @@
 #ifndef FT_CONTAINER_VECTOR_HPP
 #define FT_CONTAINER_VECTOR_HPP
 
-
 #include <memory>
 #include "__config.hpp"
+#include "ft_type_traits.hpp"
 #include "ft_utility.hpp"
 #include "ft_iterator.hpp"
 
@@ -19,11 +19,6 @@ class Vector_alloc_base
 public: // typedefs
     typedef Allocator   allocator_type;
 
-protected:
-//    typedef typename    allocator_type::pointer           pointer;
-//    typedef typename    allocator_type::const_pointer     const_pointer;
-
-public: // constructor & destructor
     explicit Vector_alloc_base(const allocator_type& _a)
             : m_Data_allocator(_a), m_Start(0), m_Finish(0), m_End_of_storage(0)
     {}
@@ -33,9 +28,6 @@ protected:
     allocator_type m_Data_allocator;
     // ------------------------------
     Tp* m_Start;
-//    pointer m_Start;
-//    pointer m_Finish;
-//    pointer m_;
     Tp* m_Finish;
     Tp* m_End_of_storage;
 
@@ -71,14 +63,14 @@ public:
     explicit Vector_base(size_t _n, const allocator_type& _a)
             : _Alloc_Base(_a)
     {
-        _Alloc_Base::m_Start = _Alloc_Base::m_allocate(_n);
-        _Alloc_Base::m_Finish = _Alloc_Base::m_Start;
-        _Alloc_Base::m_End_of_storage = _Alloc_Base::m_Start + _n;
+        this->m_Start = this->m_Allocate(_n);
+        this->m_Finish = this->m_Start;
+        this->m_End_of_storage = this->m_Start + _n;
     }
 
     ~Vector_base()
     {
-        _Alloc_Base::m_Deallocate(_Alloc_Base::m_Start, _Alloc_Base::m_End_of_storage - _Alloc_Base::m_Start);
+        this->m_Deallocate(this->m_Start, this->m_End_of_storage - this->m_Start);
     }
 };
 
@@ -118,7 +110,7 @@ public:
 public:
 //	allocator_type get_allocator() const
 //	{
-//		return _Base::get_allocator();
+//		return this->get_allocator();
 //	}
 
 private: // helper functions
@@ -131,19 +123,20 @@ private: // helper functions
 
 		// 1. allocate a new block of memory
 		// iterator new_start = m_Allocator.allocate(newCapacity);
-		pointer new_start = _Base::m_Allocate(newCapacity);
+		pointer new_start = this->m_Allocate(newCapacity);
 
 		// 2. copy/move old elements into new block
 		size_type diff = 0;
 		if (newCapacity < this->size()) // if reallocate to smaller block
 			diff = this->size() - newCapacity;
-		pointer new_finish = std::uninitialized_copy(_Base::m_Start, _Base::m_Finish - diff, new_start);
+		pointer new_finish = std::uninitialized_copy(this->m_Start, this->m_Finish - diff, new_start);
 
 		// 3. delete original & change m_iterator to point new block
 		_PRIVATE::destroy(this->m_Start, this->m_Finish);
-        _Base::m_Deallocate(this->m_Start, this->capacity());
-		_Base::m_Start = new_start;
-		_Base::m_Finish = new_finish;
+        this->m_Deallocate(this->m_Start, this->capacity());
+		this->m_Start = new_start;
+		this->m_Finish = new_finish;
+		this->m_End_of_storage = new_start + newCapacity;
 	}
 
 public:
@@ -160,13 +153,17 @@ public:
 		: _Base(_n, _allocator)
 	{
 		std::uninitialized_fill_n(this->m_Start, _n, _value); // using function at <memory.h>, Cpp98
+		this->m_Finish = this->m_Start + _n;
 	}
 
+	// * enable_if 는 여기에서 필요하다. 왜냐하면 std::vector<int>(10, 20)이 어떤 생성자인지 모르기 때문이다.
 	// https://cplusplus.com/reference/vector/vector/vector/
 	// copy constructor via other vector's iterator
 	// [ * Member Function Re-templatize ]
 	template <class InputIterator>
-	vector(InputIterator first, InputIterator last, const allocator_type& _allocator = allocator_type())
+	vector(InputIterator first, InputIterator last, const allocator_type& _allocator = allocator_type(),
+				typename FT::enable_if<!(FT::is_integral<InputIterator>::value)>::type * = 0)
+				// if not integral, then value is false. --> then type no type, then error, then Skip-overloading.
 		: _Base(std::distance(first, last), _allocator)
 	{
 		this->m_Finish = std::uninitialized_copy(first, last, this->m_Start);
@@ -184,7 +181,6 @@ public:
 		_PRIVATE::destroy(this->m_Start, this->m_Finish);
 	}
 
-//	vector<T, allocator_type>& operator=(const FT::vector<T, allocator_type> &other)
     vector_type& operator=(const vector_type& other)
 	{
 		// if self assignment
@@ -197,7 +193,7 @@ public:
 			const difference_type new_size = std::distance(other.begin(), other.end());
 
 			this->m_Deallocate(this->m_Start, this->capacity());
-			this->m_Start = this->m_Allocator.allocate(new_size);
+			this->m_Start = this->m_Allocate(new_size);
 			this->m_Finish = std::uninitialized_copy(other.begin(), other.end(), this->m_Start);
 			this->m_End_of_storage = this->m_Finish;
 		}
@@ -267,7 +263,11 @@ public:
 	}
 
 	/* Returns the size of the storage space currently allocated for the vector, expressed in terms of elements. */
-	size_type capacity() const { return this->m_End_of_storage - this->m_Start; }
+	// size_type capacity() const { return this->m_End_of_storage - this->m_Start; }
+	size_type capacity() const
+	{
+		return this->m_End_of_storage - this->m_Start;
+	}
 
 	bool empty() const { return ( begin() == end()); }
 
@@ -342,7 +342,7 @@ public:
 	void push_back(const T &value)
 	{
 		if (this->size() >= this->capacity()) {
-			_reAlloc(this->capacity() + (this->capacity() / 2));
+			_reAlloc(this->capacity() * 2);
 		}
         _PRIVATE::construct(this->m_Finish, value);
 		++this->m_Finish;
@@ -381,7 +381,7 @@ public:
 		return (cur);
 		*/
 		if (this->size() >= this->capacity()) {
-			_reAlloc(this->capacity() + (this->capacity() / 2));
+			_reAlloc(this->capacity() * 2);
 		}
 		++this->m_Finish;
 		std::copy_backward(_position, end() - 2, end() - 1);
@@ -396,7 +396,7 @@ public:
 		_PRIVATE::destroy(position, this->m_Finish);
 		// (2) 공간 필요시 확장.
 		if (this->size() + n >= this->capacity()) {
-			_reAlloc(this->capacity() + (this->capacity() / 2) + n);
+			_reAlloc((this->capacity() * 2) + n);
 		}
 		// (3) position 부터 value n개 삽입.
 		std::uninitialized_fill_n(position, n, value);
@@ -418,7 +418,7 @@ public:
 		_PRIVATE::destroy(position, this->m_Finish);
 		// (2) 공간 필요시 확장.
 		if (this->size() + sizeToCopy >= this->capacity()) {
-			_reAlloc(this->capacity() + (this->capacity() / 2) + sizeToCopy);
+			_reAlloc((this->capacity() * 2) + sizeToCopy);
 		}
 		// (3) position 부터 value n개 삽입.
 		this->m_Finish = std::uninitialized_copy(first, last, position);
@@ -479,7 +479,6 @@ public:
 		FT::swap(this->m_Start, other.m_Start);
 		FT::swap(this->m_Finish, other.m_Finish);
 		FT::swap(this->m_End_of_storage, other.m_End_of_storage);
-		// TODO: 두 이터레이터간 교환 가능한시 반드시 체크해야 함.
 	}
 
 	// clear : 원소를 모두 제거 한다.

@@ -1,4 +1,3 @@
-#pragma once
 #ifndef FT_CONTAINER_ITERATOR_HPP
 #define FT_CONTAINER_ITERATOR_HPP
 
@@ -201,7 +200,6 @@ public: // random access iterator requirements
     { return random_access_iterator(m_Current - _index); }
 
     // iter1 - iter2
-
     difference_type operator-(const random_access_iterator_type& _other_iterator) const
     { return (*this).m_Current - _other_iterator.m_Current; }
 };
@@ -256,6 +254,13 @@ operator+(typename random_access_iterator<_Iterator, _Container>::difference_typ
 { return random_access_iterator<_Iterator, _Container>(__i.base() + __n); }
 
 
+
+/*-------------------------------------------------------------------------
+template<typename _IteratorL, typename _IteratorR, typename _Container>
+inline typename random_access_iterator<_IteratorL, _Container>::difference_type
+operator-(const random_access_iterator<_IteratorL, _Container>& __lhs,
+                const random_access_iterator<_IteratorR, _Container>& __rhs)
+{ return __rhs.m_Current - __lhs.m_Current; } */
 
 
 // ---------------------------------------------------------------
