@@ -7,6 +7,36 @@
 
 FT_BEGIN_GLOBAL_NAMESPACE
 
+
+/* ------------------------------------------------------------------------
+ * * why do we need iterator_traits ?
+
+    template<class Iter>
+    void myAlgorithm(Iter begin, Iter end)
+    {
+        -----------------------------------------------------------
+        | 현재 이 상황에서 알고리즘 작성자는 Iter가 어떤 컨테이너인지 모른다.   |
+        | 몰라도 문제가 없도록 generic한 알고리즘을 작성하는 것이 중요하다.    |
+        | 그래서 container 종류에 관계 없이 iterator의 정보를 얻어낼 수 있는 |
+        | Uniform 한 데이터 접근 방법을 약속 해야한다.                    |
+        | iterator_traits는 그러한 "접근 방법" 이라고 보면 된다.          |
+        -----------------------------------------------------------
+
+        typename ft::iterator_traits<Iter>::value_type temp = *begin;
+        for (; begin != end; ++begin) {
+            // do something ...
+        }
+    }
+
+    c++11 이후에 생긴 allocator_traits도 같은 목적이다.
+    그 이전에는 알고리즘에서 서로 다른 custom_allocator 를 쓰는
+    컨테이너간의 알고리즘 적용은 undefined_behavior였으나
+    이후엔 이것에 대한 해결법이 제안되면서, allocator_traits가 등장하였다.
+    -------------------------------------------------------------------*/
+
+
+
+
 // ---------------------------------------------------------------
 // |                                                             |
 // |              Iterator Traits implementation                 |
@@ -62,25 +92,13 @@ struct iterator_traits<const T*> // Specialization if T is const pointer
 // |          Random Access Iterator implementation              |
 // |                                                             |
 // ---------------------------------------------------------------
-// * std::iterator에는 typedef밖에 없음. 이 구조를 받아서 전부 구현해줘야 한다.
 // @ basic iterator adapter.
 // This iterator adapter is 'normal' in the sense that it does not
-// change the semantics of any of the operators of its itererator parameter.
+// change the semantics of the operators of its iterator parameter.
 // * Its primary purpose is to convert an iterator that is not a class,
 // *  e.g. a pointer, into an iterator that is a class.
-// The _Container parameter exists solely so that different containers
-// using this template can instantiate different types, even if the
-// _Iterator parameter is the same. --> ! [ libcpp에 나와있는 설명글. ]
-// * 상속받는 std::iterator는 간단한 struct로, 최소한의 구조만을 가지고 있다. */
-// * 그니까 구조가, _Iterator 내부에 있는 정보들이 여기에 연결되서 들어오게 되어있음.
-// 즉 _Iterator에 이미 있어야 함.
-// 왜 _Container를 두번째 파라미터로 받나면, 같은 벡터여도 Allocator가 다르면 다른 애라고 구분하기 위함임.
-// vector에서 __normal_iterator를 쓸 때  typedef vector<_Tp, _Alloc> vector_type; 를 넣어줌.
-// 즉 같은 벡터여도 Allocator가 다르면 다른 벡터 취급하는 거임.
-// * 그럼 왜 이렇게 하냐? 어따 쓸라고? 이건 라이브러리를 더 까볼 것.
-// * Wrapping을 해주면, pointer type iterator에 대해서 특수화를 따로 하지 않아도 되지 않을까...?
-
-// ! 왜 두반째 인자로 Container를 받는가?
+// The _Container parameter exists solely so that different containers using this template
+// can instantiate different types, even if the _Iterator parameter is the same.
 template<typename Iterator, typename Container>
 class random_access_iterator
 : public std::iterator<typename FT::iterator_traits<Iterator>::iterator_category,
@@ -91,19 +109,8 @@ class random_access_iterator
 {
 protected:
   Iterator m_Current;
-  // * __normal_iterator는 그냥 _Iterator Wrapper이다.
-  // * std::iterator에서 구현된 함수를 상속받기 때문에 추가로 구현할 필요가 없다.
 
-public: // @ Using directives
-        // Ref_(1) : https://stackoverflow.com/questions/51883423/c-using-and-using-typename-in-a-header-file
-        // Ref_(2) : https://en.cppreference.com/w/cpp/language/namespace#Using-directives
-        // "using directive" is for using typenames defined in inner namespace.
-
-//    using typename FT::iterator_traits<Iterator>::iterator_category;
-//    using typename FT::iterator_traits<Iterator>::value_type;
-//    using typename FT::iterator_traits<Iterator>::difference_type;
-//    using typename FT::iterator_traits<Iterator>::pointer;
-//    using typename FT::iterator_traits<Iterator>::reference;
+public:
     typedef typename FT::iterator_traits<Iterator>      Traits;
     typedef typename Traits::iterator_category          iterator_category;
     typedef typename Traits::value_type                 value_type;
@@ -111,11 +118,7 @@ public: // @ Using directives
     typedef typename Traits::pointer                    pointer;
     typedef typename Traits::reference                  reference;
 
-
-
-
-
-public: // typedefs
+private:
     typedef random_access_iterator<Iterator, Container> random_access_iterator_type;
 
 public: // constructor & destructor

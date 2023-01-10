@@ -56,12 +56,12 @@
 /* - Ignore -fno-inline (this is what the documentation says).
    - Ignore the inlining limits hence inlining the function regardless. It also inlines functions with alloca calls, which inline keyword never does.
    - Not produce an external definition of a function with external linkage if marked with always_inline. */
-#define FT_ALWAYS_INLINE    __attribute__ ((__always_inline__))
+#define FT_ALWAYS_INLINE    inline __attribute__ ((__always_inline__))
 
 // @ FT_INTERNAL_LINKAGE
 // ? internal_linkage의 역할과 목적은?
 #if __has_attribute(internal_linkage)
-#  define FT_INTERNAL_LINKAGE __attribute__ ((internal_linkage))
+#  define FT_INTERNAL_LINKAGE   __attribute__ ((internal_linkage))
 #else
 #  define FT_INTERNAL_LINKAGE FT_ALWAYS_INLINE
 #endif
@@ -108,18 +108,6 @@
 #endif
 
 
-
-
-
-
-// * About Enable-if function. why???
-/*
-#ifndef FT_PREFERRED_OVERLOAD
-#  if __has_attribute(__enable_if__)
-#    define FT_PREFERRED_OVERLOAD __attribute__ ((__enable_if__(true, "")))
-#  endif
-#endif
- */
 
 // * Deprecation macros.
 // Deprecations warnings are always enabled, except when users explicitly opt-out

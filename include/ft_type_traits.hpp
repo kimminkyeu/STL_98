@@ -51,13 +51,13 @@ struct enable_if<true, T> // only if true, then member type exists.
 // especially in their bool variant: see true_type and false_type.
 
 // * How to use : integral_constant<bool, false>::value --> true or false
-template <class _Tp, _Tp __v>
+template <class Tp, Tp _v>
 struct integral_constant
 {
   // ----------------------------------------
-  static const _Tp      		  value = __v; // --> we use this value at enable_if
+  static const Tp      		  value = _v; // --> we use this value at enable_if
   // ----------------------------------------
-  typedef _Tp               	value_type;
+  typedef Tp               	value_type;
   typedef integral_constant		type;
 };
 
@@ -67,7 +67,7 @@ typedef integral_constant<bool,false>	false_type;
 // * (2) std::is_integral : [ Defined in header <type_traits> ]
 // https://cplusplus.com/reference/type_traits/is_integral/?kw=is_integral
 // 아래 특수화 케이스에 걸리는 애들은 모두 true, 나머지는 모두 false.
-template <class _Tp> struct is_integral                     : public false_type {};
+template <class Tp>  struct is_integral                     : public false_type {};
 template <>          struct is_integral<bool>               : public true_type {};
 template <>          struct is_integral<char>               : public true_type {};
 template <>          struct is_integral<signed char>        : public true_type {};
