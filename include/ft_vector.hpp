@@ -131,13 +131,13 @@ private: // helper functions
 
 		// 1. allocate a new block of memory
 		// iterator new_start = m_Allocator.allocate(newCapacity);
-		iterator new_start = _Base::m_Allocate(newCapacity);
+		pointer new_start = _Base::m_Allocate(newCapacity);
 
 		// 2. copy/move old elements into new block
 		size_type diff = 0;
 		if (newCapacity < this->size()) // if reallocate to smaller block
 			diff = this->size() - newCapacity;
-		iterator new_finish = std::uninitialized_copy(_Base::m_Start, _Base::m_Finish - diff, new_start);
+		pointer new_finish = std::uninitialized_copy(_Base::m_Start, _Base::m_Finish - diff, new_start);
 
 		// 3. delete original & change m_iterator to point new block
 		_PRIVATE::destroy(this->m_Start, this->m_Finish);
@@ -235,11 +235,11 @@ public:
 
 	iterator begin() { return iterator(this->m_Start); }
 
-	const_iterator begin() const { return iterator(this->m_Start); }
+	const_iterator begin() const { return const_iterator(this->m_Start); }
 
 	iterator end() { return iterator(this->m_Finish); }
 
-	const_iterator end() const { return iterator(this->m_Finish); }
+	const_iterator end() const { return const_iterator(this->m_Finish); }
 
 	reverse_iterator rbegin() { return reverse_iterator(end()); }
 

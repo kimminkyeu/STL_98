@@ -133,8 +133,8 @@ public: // constructor & destructor
     random_access_iterator()
         : m_Current()
     {}
-    // constructor Wrapping
 
+    // constructor Wrapping
     explicit random_access_iterator(const Iterator& _iterator_in)
         : m_Current(_iterator_in)
     {}
