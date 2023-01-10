@@ -33,14 +33,14 @@ struct enable_if<true, T> // only if true, then member type exists.
 // * ---------------------------------------------------------------
 // * [ How to use ]                                                |
 // * ---------------------------------------------------------------
-// * : enable_if< is_integral<bool>::value > ::type                |
+// * : enable_if< is_integral< T >::value > ::type                |
 // *              ------------------------                         |
 // *                   true or false                               |
 // *                                                               |
-// *! : (1) enable_if< true >::type   --> type doesn't exist. (X)  |
+// *! : (1) enable_if< false >::type   --> type doesn't exist. (X)  |
 //                                         (오버로딩 후보에서 제외)      |
 // *                                                               |
-// *? : (2) enable_if< flase >::type  --> type exists. (O)         |
+// *? : (2) enable_if< true >::type  --> type exists. (O)         |
 // * ---------------------------------------------------------------
 
 
