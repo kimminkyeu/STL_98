@@ -58,13 +58,13 @@ protected:
 	void m_Reallocate(size_t newCapacity)
 	{
         // exception0. maxsize
-        if (newCapacity > this->max_size()) {
+        if (newCapacity > m_Data_allocator.max_size()) {
           throw std::length_error("vector : reallocation");
         }
 
         // exception1. no size_change
 		const size_type _capacity = m_End_of_storage - m_Start;
-		if (newCapacity == (m_End_of_storage - m_Start))
+		if (newCapacity == size_t(m_End_of_storage - m_Start))
 			return;
 
 		// 1. allocate a new block of memory
@@ -93,6 +93,7 @@ public:
     {
         return m_Data_allocator;
     }
+
 
 public:
     explicit Vector_base(const allocator_type& _a)

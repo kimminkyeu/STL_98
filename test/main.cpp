@@ -8,7 +8,7 @@ void print_all(Iter begin, Iter end)
     // 이 알고리즘 작성자는 컨테이너가 벡터인지 모른다. 몰라도 되도록 추상화해야 한다.
     // 그래서 iterator_traits가 존재한다.
     typename ft::iterator_traits<Iter>::value_type temp = *begin;
-
+	(void)temp;
     // c++11 이후에 생긴 allocator_traits도 같은 목적이다.
     // 그 이전에는 알고리즘에서 서로 다른 custom_allocator 를 쓰는 컨테이너간의 알고리즘 적용은 undefined_behavior였으나
     // 이후엔 이것에 대한 해결법이 제안되면서, allocator_traits가 등장하였다.
@@ -30,6 +30,7 @@ void print_data(ft::vector<T>& vec)
 
 int main()
 {
+	ft::vector<int> vec1;
     ft::vector<int> vec(10, 3);
     vec.push_back(3);
 	print_data(vec);
