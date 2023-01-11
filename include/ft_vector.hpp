@@ -6,47 +6,13 @@
 #define FT_CONTAINER_VECTOR_HPP
 
 #include <memory>
+#include <stdexcept>
 #include "__config.hpp"
 #include "ft_type_traits.hpp"
 #include "ft_utility.hpp"
 #include "ft_iterator.hpp"
 
 FT_BEGIN_GLOBAL_NAMESPACE
-
-template <class Tp, class Allocator>
-class Vector_alloc_base
-{
-public: // typedefs
-    typedef Allocator   allocator_type;
-
-    explicit Vector_alloc_base(const allocator_type& _a)
-            : m_Data_allocator(_a), m_Start(0), m_Finish(0), m_End_of_storage(0)
-    {}
-
-protected:
-    // ------------------------------
-    allocator_type m_Data_allocator;
-    // ------------------------------
-    Tp* m_Start;
-    Tp* m_Finish;
-    Tp* m_End_of_storage;
-
-    Tp* m_Allocate(size_t _n)
-    {
-        return m_Data_allocator.allocate(_n);
-    }
-
-    void m_Deallocate(Tp* _p, size_t _n)
-    {
-        if (_p) { m_Data_allocator.deallocate(_p, _n); }
-    }
-
-public:
-    allocator_type get_allocator() const
-    {
-        return m_Data_allocator;
-    }
-};
 
 
 // ---------------------------------------------------------------
@@ -61,26 +27,81 @@ public:
 // (SGI는 boost library의 allocator 디자인으로, 메모리 할당/해제 함수가 static 이다.)
 // Ref : https://www.boost.org/sgi/stl/alloc.html
 
-template <class Tp, class Alloc>
-class Vector_base : public Vector_alloc_base<Tp, Alloc>
+template <class Tp, class Allocator>
+class Vector_base
 {
 protected: // typedef and namespace scope
-    typedef Vector_alloc_base<Tp, Alloc>                       _Vector_alloc_base;
-    typedef typename _Vector_alloc_base::allocator_type        allocator_type;
-    using _Vector_alloc_base::m_Finish;
-    using _Vector_alloc_base::m_Start;
-    using _Vector_alloc_base::m_End_of_storage;
-    using _Vector_alloc_base::m_Allocate;
-    using _Vector_alloc_base::m_Deallocate;
+    typedef Allocator        						allocator_type;
+	typedef typename allocator_type::size_type		size_type;
+	typedef typename allocator_type::pointer		pointer;
+
+protected:
+    // ------------------------------
+    allocator_type m_Data_allocator;
+    // ------------------------------
+    pointer m_Start;
+    pointer m_Finish;
+    pointer m_End_of_storage;
+
+
+    pointer m_Allocate(size_t _n)
+    {
+        return m_Data_allocator.allocate(_n);
+    }
+
+    void m_Deallocate(pointer _p, size_t _n)
+    {
+        if (_p) { m_Data_allocator.deallocate(_p, _n); }
+    }
+
+	// reallocate memory + copy existing data to new memory region.
+	void m_Reallocate(size_t newCapacity)
+	{
+        // exception0. maxsize
+        if (newCapacity > this->max_size()) {
+          throw std::length_error("vector : reallocation");
+        }
+
+        // exception1. no size_change
+		const size_type _capacity = m_End_of_storage - m_Start;
+		if (newCapacity == (m_End_of_storage - m_Start))
+			return;
+
+		// 1. allocate a new block of memory
+		// iterator new_start = m_Allocator.allocate(newCapacity);
+		pointer new_start = m_Allocate(newCapacity);
+
+		// 2. copy/move old elements into new block
+		size_type diff = 0;
+		const size_type _size = m_Finish - m_Start;
+		if (newCapacity < _size) {
+			diff = _size - newCapacity;
+		}
+		pointer new_finish = std::uninitialized_copy(m_Start, m_Finish - diff, new_start);
+
+		// 3. delete original & change m_iterator to point new block
+		_PRIVATE::destroy(m_Start, m_Finish);
+
+        m_Deallocate(m_Start, _capacity);
+		m_Start = new_start;
+		m_Finish = new_finish;
+		m_End_of_storage = new_start + newCapacity;
+	}
+
+public:
+    allocator_type get_allocator() const
+    {
+        return m_Data_allocator;
+    }
 
 public:
     explicit Vector_base(const allocator_type& _a)
-            : _Vector_alloc_base(_a)
+        : m_Data_allocator(_a), m_Start(0), m_Finish(0), m_End_of_storage(0)
     {}
 
     explicit Vector_base(size_t _n, const allocator_type& _a)
-            : _Vector_alloc_base(_a)
-    {
+        : m_Data_allocator(_a), m_Start(0), m_Finish(0), m_End_of_storage(0)
+	{
         m_Start = m_Allocate(_n);
         m_Finish = m_Start;
         m_End_of_storage = m_Start + _n;
@@ -104,11 +125,12 @@ class vector : protected Vector_base<T, Allocator>
 {
 private:
     typedef Vector_base<T, Allocator>			        _Vector_base;
-    using _Vector_base::Vector_alloc_base::m_Finish;
-    using _Vector_base::Vector_alloc_base::m_Start;
-    using _Vector_base::Vector_alloc_base::m_End_of_storage;
-    using _Vector_base::Vector_alloc_base::m_Allocate;
-    using _Vector_base::Vector_alloc_base::m_Deallocate;
+    using _Vector_base::m_Finish;
+    using _Vector_base::m_Start;
+    using _Vector_base::m_End_of_storage;
+    using _Vector_base::m_Allocate;
+    using _Vector_base::m_Deallocate;
+    using _Vector_base::m_Reallocate;
 
 private:
     typedef vector<T, Allocator>    					vector_type;
@@ -127,31 +149,6 @@ public:
     typedef typename FT::random_access_iterator<const_pointer, vector_type>     				const_iterator;
     typedef typename FT::reverse_iterator<iterator>			                                    reverse_iterator;
 	typedef typename FT::reverse_iterator<const_iterator>                                       const_reverse_iterator;
-
-private: // helper functions
-	// data reallocation to new block of memory (force change)
-	void _reAlloc(size_t newCapacity)
-	{
-		if (newCapacity == capacity())
-			return;
-
-		// 1. allocate a new block of memory
-		// iterator new_start = m_Allocator.allocate(newCapacity);
-		pointer new_start = m_Allocate(newCapacity);
-
-		// 2. copy/move old elements into new block
-		size_type diff = 0;
-		if (newCapacity < size()) // if reallocate to smaller block
-			diff = size() - newCapacity;
-		pointer new_finish = std::uninitialized_copy(m_Start, m_Finish - diff, new_start);
-
-		// 3. delete original & change m_iterator to point new block
-		_PRIVATE::destroy(m_Start, m_Finish);
-        m_Deallocate(m_Start, this->capacity());
-		m_Start = new_start;
-		m_Finish = new_finish;
-		m_End_of_storage = new_start + newCapacity;
-	}
 
 public:
 	// 23.2.4.1 construct/copy/destroy:
@@ -194,6 +191,8 @@ public:
 
 	~vector()
 	{
+		// (1) call destructor of vector_alloc_base
+		// (2) call destructor of vector_base
 		_PRIVATE::destroy(m_Start, m_Finish);
 	}
 
@@ -228,7 +227,7 @@ public:
 		this->clear();
 		const difference_type new_size = std::distance(first, last);
 		if (new_size > this->capacity())
-			_reAlloc(new_size);
+			m_Reallocate(new_size);
 		m_Finish = std::uninitialized_copy(first, last, m_Start);
 	}
 
@@ -237,7 +236,7 @@ public:
 		// 벡터 객체에 이전에 있었던 원소들은 모두 삭제하고, 인자로 받은 새로운 내용을 집어 넣는다. 원래 내용을 다 지우고 원소 u 를 n 개 가지는 벡터로 만든다.
 		this->clear();
 		if (n > this->capacity())
-			_reAlloc(n);
+			m_Reallocate(n);
 		std::uninitialized_fill_n(m_Start, n, value);
 		m_Finish = this->_Start + n;
 	}
@@ -302,7 +301,7 @@ public:
 		else // n > this->size()
 		{
 			if (_n > this->capacity()) // if n is also greater than capacity
-				_reAlloc(_n);
+				m_Reallocate(_n);
 			std::uninitialized_fill_n(m_Finish, _n - m_Finish, _value);
 		}
 		m_Finish = m_Start + _n;
@@ -315,8 +314,9 @@ public:
 	This function has no effect on the vector size and cannot alter its elements. */
 	void reserve(size_type n)
 	{
+
 		if (n > this->capacity())
-			_reAlloc(n);
+			m_Reallocate(n);
 	}
 
 	// ---------------------------------------------------------------------------
@@ -324,25 +324,27 @@ public:
 
 	reference operator[](size_type n)
 	{
-		if (n > this->size())
-		{
-			// handle error...
-		}
 		return *(begin() + n);
 	}
 
 	const_reference operator[](size_type n) const
 	{
-		if (n > this->size())
-		{
-			// handle error...
-		}
 		return *(begin() + n);
 	}
 
-	const_reference at(size_type n) const { return *(begin() + n); }
+	const_reference at(size_type n) const {
+       if (n > this->size()) {
+            throw std::out_of_range("vector: ");
+		}
+        return this->operator[](n);
+    }
 
-	reference at(size_type n) { return *(begin() + n); }
+	reference at(size_type n) {
+        if (n > this->size()) {
+            throw std::out_of_range("vector: ");
+		}
+        return this->operator[](n);
+    }
 
 	reference front() { return *begin(); }
 
@@ -358,7 +360,7 @@ public:
 	void push_back(const T &value)
 	{
 		if (this->size() >= this->capacity()) {
-			_reAlloc(this->capacity() * 2);
+			m_Reallocate(this->capacity() * 2);
 		}
         _PRIVATE::construct(m_Finish, value);
 		++m_Finish;
@@ -369,39 +371,17 @@ public:
 		if (this->empty()) {
 			return ;
 		}
-		// m_Allocator.destory(--m_Finish);
 		_PRIVATE::destroy(--m_Finish);
 	}
 
-	// TODO: 이건 성능 검증을 좀 해야 겠다.
 	iterator insert(iterator _position, const T& _value)
 	{
-		// 1 2 3 .
-
-		//   p   c
-		// 1 2 3 A .
-
-		//   p c
-		// 1 2 A 3 .
-
-		//   c
-		// 1 A 2 3 .
-
-		/* --> 원래 아래 코드로 짰으나, 비효율적인 코드
-		push_back(value); // (1) 일단 맨 뒤에 넣고.
-		iterator cur = m_Finish - 1; // cur = 마지막 원소
-		while (cur != position) {
-			// (2) 뒤에서 앞으로 swap 진행.
-			_PRIVATE::swap(*(cur), *(--cur));
-		}
-		return (cur);
-		*/
-		if (this->size() >= this->capacity()) {
-			_reAlloc(this->capacity() * 2);
-		}
-		++m_Finish;
-		std::copy_backward(_position, end() - 2, end() - 1);
-		*_position = _value;
+        if (this->size() >= this->capacity()) {
+            m_Reallocate(this->capacity() * 2);
+        }
+        ++m_Finish;
+            std::copy_backward(_position, end() - 2, end() - 1);
+        *_position = _value;
 	}
 
 	// TODO: 굳이 destroy 를 해야 하나? 그냥 덮어 쓰면 안되나...
@@ -412,7 +392,7 @@ public:
 		_PRIVATE::destroy(position, m_Finish);
 		// (2) 공간 필요시 확장.
 		if (this->size() + n >= this->capacity()) {
-			_reAlloc((this->capacity() * 2) + n);
+			m_Reallocate((this->capacity() * 2) + n);
 		}
 		// (3) position 부터 value n개 삽입.
 		std::uninitialized_fill_n(position, n, value);
@@ -434,7 +414,7 @@ public:
 		_PRIVATE::destroy(position, m_Finish);
 		// (2) 공간 필요시 확장.
 		if (this->size() + sizeToCopy >= this->capacity()) {
-			_reAlloc((this->capacity() * 2) + sizeToCopy);
+			m_Reallocate((this->capacity() * 2) + sizeToCopy);
 		}
 		// (3) position 부터 value n개 삽입.
 		m_Finish = std::uninitialized_copy(first, last, position);
