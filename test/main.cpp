@@ -1,6 +1,15 @@
 
 #include <iostream>
-#include "ft_vector.hpp"
+//#include <vector>
+#include "vector.hpp"
+
+void	checkErase(const ft::vector<std::string>& vct,
+                   const ft::vector<std::string>::const_iterator& it)
+{
+    static int i = 0;
+    std::cout << "[" << i++ << "] " << "erase: " << it - vct.begin() << std::endl;
+}
+
 
 template<class Iter>
 void print_all(Iter begin, Iter end)
@@ -37,6 +46,10 @@ int main()
     vec.pop_back();
     print_data(vec);
 
+    vec.erase(vec.begin(), vec.end() + 2);
+    vec.erase(vec.begin());
+
+
 /*
 Candidate template ignored:
 substitution failure [with InputIterator = ft::random_access_iterator<int *, ft::vector<int> >]
@@ -45,6 +58,38 @@ substitution failure [with InputIterator = ft::random_access_iterator<int *, ft:
 
 	ft::vector<int> vec_cpy(vec.begin(), vec.end());
 	print_data(vec_cpy);
+
+
+    ft::vector<std::string> vec_string(10, "hello");
+//    vec_string/**/.erase(vec.begin(), vec.end());
+    vec_string.erase(vec_string.begin(), vec_string.begin() + 3);
+
+//    void	checkErase(ft::vector<std::string> const &vct,
+//                       ft::vector<std::string>::const_iterator const &it)
+
+// ! 이게 안되는 이유 : iterator를 const_iterator로 바꾸지 못한다.
+
+//    std::vector<std::string> vec_string2(10, "hello");
+//    checkErase(vec_string2, vec_string2.erase(vec_string2.begin()));
+
+//    auto k = vec_string2.begin() + 3;
+//    auto i = k - vec_string2.begin()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 	return (0);
 }

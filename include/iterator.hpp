@@ -203,8 +203,8 @@ public: // random access iterator requirements
     { return random_access_iterator(m_Current - _index); }
 
     // iter1 - iter2
-    difference_type operator-(const random_access_iterator_type& _other_iterator) const
-    { return (*this).m_Current - _other_iterator.m_Current; }
+//    difference_type operator-(const random_access_iterator_type& _other_iterator) const
+//    { return (*this).m_Current - _other_iterator.m_Current; }
 };
 
 // default random_access_iterator( aka. __normal_iterator )는 모든 기능이 가능함.
@@ -256,7 +256,22 @@ inline random_access_iterator<_Iterator, _Container>
 operator+(typename random_access_iterator<_Iterator, _Container>::difference_type __n, const random_access_iterator<_Iterator, _Container>& __i)
 { return random_access_iterator<_Iterator, _Container>(__i.base() + __n); }
 
+template <typename T, typename _Container>
+typename FT::random_access_iterator<T, _Container>::difference_type
+operator-(const ft::random_access_iterator<T, _Container> lhs,
+          const ft::random_access_iterator<T, _Container> rhs)
+{
+    return (lhs.base() - rhs.base());
+}
 
+/* For iterator - const_iterator */
+template<typename T_L, typename T_R, typename _Container>
+typename FT::random_access_iterator<T_L, _Container>::difference_type
+operator-(const ft::random_access_iterator<T_L, _Container> lhs,
+          const ft::random_access_iterator<T_R, _Container> rhs)
+{
+    return (lhs.base() - rhs.base());
+}
 
 // ---------------------------------------------------------------
 // |                                                             |

@@ -8,9 +8,9 @@
 #include <memory>
 #include <stdexcept>
 #include "__config.hpp"
-#include "ft_type_traits.hpp"
-#include "ft_utility.hpp"
-#include "ft_iterator.hpp"
+#include "type_traits.hpp"
+#include "utility.hpp"
+#include "iterator.hpp"
 
 FT_BEGIN_GLOBAL_NAMESPACE
 
@@ -146,6 +146,7 @@ public:
     typedef typename allocator_type::const_reference    const_reference;
     typedef typename allocator_type::pointer            pointer;            // _Tp* on std::allocator
 	typedef typename allocator_type::const_pointer      const_pointer;      // const _Tp* on std::allocator
+
     typedef typename FT::random_access_iterator<pointer, vector_type>            				iterator;
     typedef typename FT::random_access_iterator<const_pointer, vector_type>     				const_iterator;
     typedef typename FT::reverse_iterator<iterator>			                                    reverse_iterator;
@@ -221,14 +222,13 @@ public:
 
 	/* Assigns new contents to the vector, replacing its current contents, and modifying its size accordingly.
 	If a reallocation happens,the storage needed is allocated using the internal allocator. */
-
+    // ! assign도 integral 형에 대한 enable_if가 필요하다.
 	template <class InputIterator>
-	void assign(InputIterator first, InputIterator last)
+	void assign(InputIterator first, InputIterator last,
+                typename FT::enable_if<!(FT::is_integral<InputIterator>::value)>::type * = 0)
 	{
 		this->clear();
-		const difference_type new_size = std::distance(first, last);
-		if (new_size > this->capacity())
-			m_Reallocate(new_size);
+        m_Reallocate(last - first);
 		m_Finish = std::uninitialized_copy(first, last, m_Start);
 	}
 
@@ -239,7 +239,7 @@ public:
 		if (n > this->capacity())
 			m_Reallocate(n);
 		std::uninitialized_fill_n(m_Start, n, value);
-		m_Finish = this->_Start + n;
+		m_Finish = m_Start + n;
 	}
 
 	// ---------------------------------------------------------------------------
@@ -375,14 +375,16 @@ public:
 		_PRIVATE::destroy(--m_Finish);
 	}
 
+    // returns an iterator that points to the first of the newly inserted elements.
 	iterator insert(iterator _position, const T& _value)
 	{
         if (this->size() >= this->capacity()) {
-            m_Reallocate(this->capacity() * 2);
+            m_Reallocate(this->capacity() * 2); // may throw exception
         }
         ++m_Finish;
-            std::copy_backward(_position, end() - 2, end() - 1);
+        iterator tmp = std::copy_backward(_position, end() - 2, end() - 1);
         *_position = _value;
+        return (tmp);
 	}
 
 	// TODO: 굳이 destroy 를 해야 하나? 그냥 덮어 쓰면 안되나...
@@ -393,7 +395,7 @@ public:
 		_PRIVATE::destroy(position, m_Finish);
 		// (2) 공간 필요시 확장.
 		if (this->size() + n >= this->capacity()) {
-			m_Reallocate((this->capacity() * 2) + n);
+			m_Reallocate((this->capacity() * 2) + n); // may throw exception
 		}
 		// (3) position 부터 value n개 삽입.
 		std::uninitialized_fill_n(position, n, value);
@@ -426,8 +428,7 @@ public:
 		m_Deallocate(tmp.begin(), tmp.capacity());
 	}
 
-	/* An iterator pointing to the new location of the element
-	that followed the last element erased by the function call. */
+
 	iterator erase(iterator position)
 	{
 		//   c
@@ -443,30 +444,31 @@ public:
 		// 1 2 3 x
 
 		iterator cur = position;
-		while (cur != (m_Finish - 1)) {
+		while (cur != iterator(m_Finish - 1)) {
 			FT::swap(*cur, *(++cur));
 		}
 		pop_back();
 		return (position + 1);
 	}
 
-	/* An iterator pointing to the new location of the element
-	that followed the last element erased by the function call. */
 	iterator erase(iterator first, iterator last)
 	{
-		if (first == last)
-			return ;
-		// (0) first 부터 last 까지 개수 구하기
-		const difference_type sizeToReduce = std::distance(first, last);
+        // 1 2 (3) (4) 5 6
+        // 1 2              5 6
+
+        // 1 2 5 6  --> return 5*
+
 		// (1) 삭제 뒷 부분 따로 보유.
-		FT::vector<T> tmp(last, m_Finish);
+		FT::vector<T> tmp(last, iterator(m_Finish));
 		// (2) first 이후 부터 싹 다 제거.
-		_PRIVATE::destroy(first, m_Finish);
+		_PRIVATE::destroy(first, iterator(m_Finish));
 		// (3) first 로 백업본 복사.
 		m_Finish = std::uninitialized_copy(tmp.begin(), tmp.end(), m_Start);
 		// (4) 백업본 삭제.
 		_PRIVATE::destroy(tmp.begin(), tmp.end());
-		m_Deallocate(tmp.begin(), tmp.capacity());
+		m_Deallocate(&(*tmp.begin()), tmp.capacity());
+
+        return first;
 	}
 
 

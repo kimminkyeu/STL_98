@@ -2,8 +2,8 @@
 // Created by 김민규 on 2022/12/28.
 //
 
-#ifndef FT_CONTAINER_FT_UTILITY_HPP
-#define FT_CONTAINER_FT_UTILITY_HPP
+#ifndef FT_CONTAINER_UTILITY_HPP
+#define FT_CONTAINER_UTILITY_HPP
 
 // --------------------------------------------------------------------------------*
 //  ft_container subject 에서 명시한 직접 구현 사항들 입니다.                             *
@@ -12,7 +12,7 @@
 // --------------------------------------------------------------------------------*
 
 #include "__config.hpp"
-#include "ft_type_traits.hpp"
+#include "type_traits.hpp"
 FT_BEGIN_PRIVATE_NAMESPACE
 
 // * NOTE:  m_Allocator.destroy(...) 를 사용하지 않았습니다.
@@ -159,4 +159,4 @@ pair<T1, T2> make_pair( T1 t, T2 u )
 
 FT_END_GLOBAL_NAMESPACE
 
-#endif //FT_CONTAINER_FT_UTILITY_HPP
+#endif //FT_CONTAINER_UTILITY_HPP
