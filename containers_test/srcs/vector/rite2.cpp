@@ -9,6 +9,10 @@ int		main(void)
 	TESTED_NAMESPACE::vector<TESTED_TYPE>::reverse_iterator it = vct.rbegin();
 	TESTED_NAMESPACE::vector<TESTED_TYPE>::const_reverse_iterator ite = vct.rbegin();
 
+	// TESTED_NAMESPACE::vector<const TESTED_TYPE> vct_const(size);
+	// TESTED_NAMESPACE::vector<TESTED_TYPE>::const_reverse_iterator ite2 = vct_const.rbegin();
+
+
 	for (int i = 0; i < size; ++i)
 		it[i] = (size - i) * 5;
 

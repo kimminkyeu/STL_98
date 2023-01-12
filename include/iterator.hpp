@@ -24,7 +24,7 @@ FT_BEGIN_GLOBAL_NAMESPACE
 
         typename ft::iterator_traits<Iter>::value_type temp = *begin;
         for (; begin != end; ++begin) {
-            // do something ...
+            ... do something ...
         }
     }
 
@@ -33,7 +33,6 @@ FT_BEGIN_GLOBAL_NAMESPACE
     컨테이너간의 알고리즘 적용은 undefined_behavior였으나
     이후엔 이것에 대한 해결법이 제안되면서, allocator_traits가 등장하였다.
     -------------------------------------------------------------------*/
-
 
 
 
@@ -60,6 +59,7 @@ struct iterator_traits // Basic Template
 	typedef typename Iterator::reference            reference;
 	typedef typename Iterator::iterator_category    iterator_category;
 };
+
 // The standard library provides two partial specializations for pointer types T*,
 // which makes it possible to use all iterator-based algorithms with raw pointers.
 
@@ -131,6 +131,7 @@ public: // constructor & destructor
         return m_Current;
     }
 
+
     // constructor
     random_access_iterator()
         : m_Current()
@@ -141,13 +142,19 @@ public: // constructor & destructor
         : m_Current(_iterator_in)
     {}
 
-    // copy constructor
+    // copy constructor (used at casting)
     template<typename Iter>
-    explicit random_access_iterator(const random_access_iterator<Iter, Container>& _iterator_in)
-        : m_Current(_iterator_in.base()) // wrapper가 감싸고 있는 부분을 깊은 복사하는 것.
+    explicit random_access_iterator(const random_access_iterator<Iter, Container>& _other_iterator)
+        : m_Current(_other_iterator.base()) // wrapper가 감싸고 있는 부분을 깊은 복사하는 것.
     {}
 
 public: // operator
+
+    //. Because of explicit keyword on constructor, i added const_iterator cast operator. ( Type-casting [T*] to [const T*] )
+    operator random_access_iterator<const value_type*, Container>()
+    {
+        return random_access_iterator<const value_type*, Container>(this->m_Current);
+    }
 
      //. *normal_itr
     reference operator*() const
@@ -157,6 +164,12 @@ public: // operator
     pointer operator->() const
     { return m_Current; }
 
+    template<typename Iter>
+    random_access_iterator_type& operator=(const random_access_iterator<Iter, Container>& _other_iterator)
+    {
+        m_Current = _other_iterator.base();
+        return (*this);
+    }
 
     random_access_iterator_type operator++(int)
     { return random_access_iterator(m_Current++); }
@@ -173,8 +186,8 @@ public: // operator
     random_access_iterator_type& operator--()
     { --m_Current; return *this; }
 
-public: // random access iterator requirements
 
+public: // random access iterator requirements
 
     reference operator[](const difference_type& _index) const
     { return m_Current[_index]; }
@@ -185,7 +198,6 @@ public: // random access iterator requirements
         m_Current += _index;
         return *this;
     }
-
 
     random_access_iterator_type operator+(const difference_type& _index) const
     { return random_access_iterator(m_Current + _index); }
@@ -198,19 +210,11 @@ public: // random access iterator requirements
     }
 
     // iter - n
-
     random_access_iterator_type operator-(const difference_type& _index) const
     { return random_access_iterator(m_Current - _index); }
 
-    // iter1 - iter2
-//    difference_type operator-(const random_access_iterator_type& _other_iterator) const
-//    { return (*this).m_Current - _other_iterator.m_Current; }
 };
 
-// default random_access_iterator( aka. __normal_iterator )는 모든 기능이 가능함.
-// 따라서 forward iterator의 요구사항또한 충족해야 함.
-// 얘네들이 왜 class 밖에 있냐면, iterator간의 +/- 연산은 동등한 레벨 class간의 연산이기에
-// 연산자가 한 클래스의 멤버로 종속될 필요가 없기 때문이다.
 // @ forward iterator requirements.
 // left-hand-side / right_hand_side
 
@@ -273,6 +277,7 @@ operator-(const ft::random_access_iterator<T_L, _Container> lhs,
     return (lhs.base() - rhs.base());
 }
 
+
 // ---------------------------------------------------------------
 // |                                                             |
 // |              Reverse Iterator implementation                |
@@ -312,7 +317,7 @@ public: // constructor & destructor
     {}
 
 	template <class _Iter>
-	explicit reverse_iterator(const reverse_iterator<_Iter>& _x)
+    reverse_iterator(const reverse_iterator<_Iter>& _x)
         : m_Current(_x.base())
     {}
 
@@ -322,7 +327,11 @@ public: // constructor & destructor
 
 	template <class _Iter>
 	reverse_iterator& operator=(const reverse_iterator<_Iter>& _x)
-    { m_Current = _x.base(); }
+    {
+        m_Current = _x.base();
+        return (*this);
+    }
+
 
 	Iterator base() const
     { return m_Current; }
@@ -382,47 +391,50 @@ public: // constructor & destructor
     { return *(*this + _n); }
 };
 
-template <class Iterator>
+template <class Iter1, class Iter2>
 bool operator==(
-        const reverse_iterator<Iterator>& x,
-        const reverse_iterator<Iterator>& y)
+        const reverse_iterator<Iter1>& x,
+        const reverse_iterator<Iter2>& y)
 { return x.base() == y.base(); }
 
-template <class Iterator>
+
+template <class Iter1, class Iter2>
 bool operator<(
-        const reverse_iterator<Iterator>& x,
-        const reverse_iterator<Iterator>& y)
+        const reverse_iterator<Iter1>& x,
+        const reverse_iterator<Iter2>& y)
+{ return x.base() > y.base(); }
+
+template <class Iter1, class Iter2>
+bool operator!=(
+        const reverse_iterator<Iter1>& x,
+        const reverse_iterator<Iter2>& y)
+{ return !(x.base() == y.base()); }
+
+template <class Iter1, class Iter2>
+bool operator>(
+        const reverse_iterator<Iter1>& x,
+        const reverse_iterator<Iter2>& y)
 { return x.base() < y.base(); }
 
-template <class Iterator>
-bool operator!=(
-        const reverse_iterator<Iterator>& x,
-        const reverse_iterator<Iterator>& y)
-{ return !(x == y); }
-
-template <class Iterator>
-bool operator>(
-        const reverse_iterator<Iterator>& x,
-        const reverse_iterator<Iterator>& y)
-{ return y < x; }
-
-template <class Iterator>
+template <class Iter1, class Iter2>
 bool operator>=(
-        const reverse_iterator<Iterator>& x,
-        const reverse_iterator<Iterator>& y)
-{ return !(x < y); }
+        const reverse_iterator<Iter1>& x,
+        const reverse_iterator<Iter2>& y)
+{ return (x.base() <= y.base()); }
 
-template <class Iterator>
+template <class Iter1, class Iter2>
 bool operator<=(
-        const reverse_iterator<Iterator>& x,
-        const reverse_iterator<Iterator>& y)
-{ return !(y < x); }
+        const reverse_iterator<Iter1>& x,
+        const reverse_iterator<Iter2>& y)
+{ return (x.base() >= y.base()); }
 
-template <class Iterator>
-typename reverse_iterator<Iterator>::difference_type operator-(
-        const reverse_iterator<Iterator>& x,
-        const reverse_iterator<Iterator>& y)
-{ return y.base() - x.base(); }
+
+template <class _Iter1, class _Iter2>
+typename reverse_iterator<_Iter1>::difference_type
+operator-(const reverse_iterator<_Iter1>& __x, const reverse_iterator<_Iter2>& __y)
+{
+    return __y.base() - __x.base();
+}
 
 template <class Iterator>
 reverse_iterator<Iterator> operator+(
