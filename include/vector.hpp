@@ -171,8 +171,9 @@ public:
     //* Constructs an empty container, with no elements
     FT_HIDE_FROM_ABI
     explicit vector(const allocator_type& _allocator = allocator_type())
-    // _NOEXCEPT_(is_nothrow_copy_constructible<allocator_type>::value)
         : _Vector_base(_allocator)
+        // (C++17 추가 exception)
+        // _NOEXCEPT_(is_nothrow_copy_constructible<allocator_type>::value)
     {}
 
     //* Constructs a container with n elements. Each element is a copy of val.
