@@ -5,7 +5,6 @@
 #ifndef FT_CONTAINER_VECTOR_HPP
 #define FT_CONTAINER_VECTOR_HPP
 
-#include <iterator>
 #include <memory>
 #include <stdexcept>
 #include "__config.hpp"
@@ -45,21 +44,17 @@ protected:
     pointer m_End_of_storage;
 
     pointer m_Allocate(size_t _n)
-    {
-        return m_Data_allocator.allocate(_n);
-    }
+    { return m_Data_allocator.allocate(_n); }
 
     void m_Deallocate(pointer _p, size_t _n)
-    {
-        if (_p) { m_Data_allocator.deallocate(_p, _n); }
-    }
+    { if (_p) { m_Data_allocator.deallocate(_p, _n); } }
 
     // reallocate memory + copy existing data to new memory region.
     void m_Reallocate(size_t newCapacity)
     {
         // exception0. maxsize
         if (newCapacity > m_Data_allocator.max_size()) {
-          throw std::length_error("vector : reallocation");
+          throw std::length_error("vector");
         }
 
         // exception1. no size_change
@@ -88,10 +83,6 @@ protected:
         m_End_of_storage = new_start + newCapacity;
     }
 
-
-
-
-public:
     explicit Vector_base(const allocator_type& _a)
         : m_Data_allocator(_a), m_Start(0), m_Finish(0), m_End_of_storage(0)
     {}
@@ -105,8 +96,17 @@ public:
     }
 
     ~Vector_base()
+    { m_Deallocate(m_Start, m_End_of_storage - m_Start); }
+
+
+    // ---------------------------------------------------------
+    size_type capacity() const _NOEXCEPT
+    { return m_End_of_storage - m_Start; }
+
+    void clear() _NOEXCEPT
     {
-        m_Deallocate(m_Start, m_End_of_storage - m_Start);
+        _PRIVATE::destroy(m_Start, m_Finish);
+        m_Finish = m_Start;
     }
 };
 
@@ -153,11 +153,13 @@ public:
 
     //* Constructs an empty container, with no elements
     explicit vector(const allocator_type& _allocator = allocator_type())
+    // _NOEXCEPT_(is_nothrow_copy_constructible<allocator_type>::value)
         : _Vector_base(_allocator)
     {}
 
     //* Constructs a container with n elements. Each element is a copy of val.
     explicit vector(size_type _n, const T &_value = T(), const allocator_type& _allocator = allocator_type())
+    // ! may throw exception
         : _Vector_base(_n, _allocator)
     {
         std::uninitialized_fill_n(m_Start, _n, _value); // using function at <memory.h>, Cpp98
@@ -172,26 +174,27 @@ public:
     vector(InputIterator first, InputIterator last, const allocator_type& _allocator = allocator_type(),
                 typename FT::enable_if<!(FT::is_integral<InputIterator>::value)>::type * = 0)
                 // if not integral, then value is false.
+                // ! may throw exception
         : _Vector_base(std::distance(first, last), _allocator)
     {
         m_Finish = std::uninitialized_copy(first, last, m_Start);
     }
 
     //* Copy constructor
-    explicit vector(const FT::vector<T, allocator_type> &x)
+    explicit vector(const FT::vector<T, allocator_type> &x)  // ! may throw exception
         : _Vector_base(x.size(), x.get_allocator())
     {
         m_Finish = std::uninitialized_copy(x.begin(), x.end(), m_Start);
     }
 
-    ~vector()
+    ~vector() // ! may throw exception
     {
         // (1) call destructor of vector_alloc_base
         // (2) call destructor of vector_base
         _PRIVATE::destroy(m_Start, m_Finish);
     }
 
-    vector_type& operator=(const vector_type& other)
+    vector_type& operator=(const vector_type& other) // ! may throw exception
     {
         // if self assignment
         if (*this == other) return *this;
@@ -213,19 +216,19 @@ public:
         return (*this);
     }
 
-    /* Assigns new contents to the vector, replacing its current contents, and modifying its size accordingly.
-    If a reallocation happens,the storage needed is allocated using the internal allocator. */
-    // * assign도 integral 형에 대한 enable_if가 필요하다.
+    //* Assigns new contents to the vector, replacing its current contents, and modifying its size accordingly.
+    // assign도 integral 형에 대한 enable_if가 필요하다.
     template <class InputIterator>
     void assign(InputIterator first, InputIterator last,
                 typename FT::enable_if<!(FT::is_integral<InputIterator>::value)>::type * = 0)
+                // ! may throw exception
     {
         this->clear();
         m_Reallocate(last - first);
         m_Finish = std::uninitialized_copy(first, last, m_Start);
     }
 
-    void assign(size_type n, const T &value)
+    void assign(size_type n, const T &value) // ! may throw exception
     {
         // 벡터 객체에 이전에 있었던 원소들은 모두 삭제하고, 인자로 받은 새로운 내용을 집어 넣는다. 원래 내용을 다 지우고 원소 u 를 n 개 가지는 벡터로 만든다.
         this->clear();
@@ -238,47 +241,54 @@ public:
     // ---------------------------------------------------------------------------
     // iterators:
 
-    iterator begin() { return iterator(m_Start); }
+    iterator begin() _NOEXCEPT
+    { return iterator(m_Start); }
 
-    const_iterator begin() const { return const_iterator(m_Start); }
+    const_iterator begin() const _NOEXCEPT
+    { return const_iterator(m_Start); }
 
-    iterator end() { return iterator(m_Finish); }
+    iterator end() _NOEXCEPT
+    { return iterator(m_Finish); }
 
-    const_iterator end() const { return const_iterator(m_Finish); }
+    const_iterator end() const _NOEXCEPT
+    { return const_iterator(m_Finish); }
 
-    reverse_iterator rbegin() { return reverse_iterator(end()); }
+    reverse_iterator rbegin() _NOEXCEPT
+    { return reverse_iterator(end()); }
 
-    const_reverse_iterator rbegin() const { return const_reverse_iterator(end()); }
+    const_reverse_iterator rbegin() const _NOEXCEPT
+    { return const_reverse_iterator(end()); }
 
-    reverse_iterator rend() { return reverse_iterator(begin()); }
+    reverse_iterator rend() _NOEXCEPT
+    { return reverse_iterator(begin()); }
 
-    const_reverse_iterator rend() const { return const_reverse_iterator(begin()); }
+    const_reverse_iterator rend() const _NOEXCEPT
+    { return const_reverse_iterator(begin()); }
 
 
     // ---------------------------------------------------------------------------
     // 23.2.4.2 capacity:
 
     //* Returns the number of elements in the vector.
-    size_type size() const { return size_type(end() - begin()); }
+    size_type size() const _NOEXCEPT
+    { return static_cast<size_type>(end() - begin()); }
 
     //* Returns the maximum object size supported by the allocator
     //  Didn't use allocator's max_size(), because it's optinal function.
     //  REF (1) : https://en.cppreference.com/w/cpp/memory/allocator/max_size
     //  REF (2) : https://en.cppreference.com/w/cpp/named_req/Allocator --> optional.
-    size_type max_size() const { return (std::numeric_limits<size_type>::max() / sizeof(value_type)); }
+    size_type max_size() const _NOEXCEPT
+    { return (std::numeric_limits<size_type>::max() / sizeof(value_type)); }
 
     //* Returns the size of the storage space currently allocated for the vector, expressed in terms of elements.
-    size_type capacity() const { return m_End_of_storage - m_Start; }
+    size_type capacity() const _NOEXCEPT
+    { return _Vector_base::capacity(); }
 
-    bool empty() const { return ( begin() == end()); }
+    bool empty() const _NOEXCEPT
+    { return ( begin() == end()); }
 
-    /*
-    Resizes the container so that it contains n elements.
-    If n is smaller than the current container size, the content is reduced to its first n elements, removing those beyond (and destroying them).
-    If n is greater than the current container size, the content is expanded by inserting at the end as many elements as needed to reach a size of n. If val is specified, the new elements are initialized as copies of val, otherwise, they are value-initialized.
-    If n is also greater than the current container capacity, an automatic reallocation of the allocated storage space takes place.
-    Notice that this function changes the actual content of the container by inserting or erasing elements from it.	*/
-    void resize(size_type _n, T _value = T())
+    //* Resizes the container so that it contains n elements.
+    void resize(size_type _n, T _value = T()) // ! may throw exception
     {
         if (_n == this->size())
             return ;
@@ -293,14 +303,9 @@ public:
         m_Finish = m_Start + _n;
     }
 
-    /*
-    Requests that the vector capacity be at least enough to contain n elements.
-    If n is greater than the current vector capacity, the function causes the container to reallocate its storage increasing its capacity to n (or greater).
-    In all other cases, the function call does not cause a reallocation and the vector capacity is not affected.
-    This function has no effect on the vector size and cannot alter its elements. */
-    void reserve(size_type n)
+    //* Requests that the vector capacity be at least enough to contain n elements.
+    void reserve(size_type n) // ! may throw exception
     {
-
         if (n > this->capacity())
             m_Reallocate(n);
     }
@@ -308,48 +313,57 @@ public:
     // ---------------------------------------------------------------------------
     // element access:
 
-    allocator_type get_allocator() const { return m_Data_allocator; }
+    allocator_type get_allocator() const _NOEXCEPT
+    { return m_Data_allocator; }
 
-    pointer data() { return m_Start; }
+    value_type* data() _NOEXCEPT
+    { return m_Start; }
 
-    const_pointer data() const { return m_Start; }
+    const value_type* data() const _NOEXCEPT
+    { return m_Start; }
 
-    reference operator[](size_type n)
+    reference operator[](size_type n) _NOEXCEPT
     {
         return *(begin() + n);
     }
 
-    const_reference operator[](size_type n) const
+    const_reference operator[](size_type n) const _NOEXCEPT
     {
         return *(begin() + n);
     }
 
-    const_reference at(size_type n) const {
+    const_reference at(size_type n) const // ! may throw exception
+    {
        if (n > this->size()) {
-            throw std::out_of_range("vector:");
+            throw std::out_of_range("vector");
         }
         return this->operator[](n);
     }
 
-    reference at(size_type n) {
+    reference at(size_type n)  // ! may throw exception
+    {
         if (n > this->size()) {
-            throw std::out_of_range("vector:");
+            throw std::out_of_range("vector");
         }
         return this->operator[](n);
     }
 
-    reference front() { return *begin(); }
+    reference front() _NOEXCEPT
+    { return *begin(); }
 
-    const_reference front() const { return *begin(); }
+    const_reference front() const _NOEXCEPT
+    { return *begin(); }
 
-    reference back() { return *(--end()); }
+    reference back() _NOEXCEPT
+    { return *(--end()); }
 
-    const_reference back() const { return *(--end()); }
+    const_reference back() const _NOEXCEPT
+    { return *(--end()); }
 
     // ---------------------------------------------------------------------------
     // 23.2.4.3 modifiers:
 
-    void push_back(const T &value)
+    void push_back(const T &value) // ! may throw exception
     {
         if (this->capacity() == 0) {
             reserve(1);
@@ -361,7 +375,7 @@ public:
         ++m_Finish;
     }
 
-    void pop_back()
+    void pop_back() _NOEXCEPT
     {
         if (this->empty()) {
             return ;
@@ -369,8 +383,7 @@ public:
         _PRIVATE::destroy(--m_Finish);
     }
 
-    // returns an iterator that points to the first of the newly inserted elements.
-    iterator insert(iterator _position, const T& _value)
+    iterator insert(iterator _position, const T& _value) // ! may throw exception
     {
         const difference_type insert_pos = std::distance(begin(), _position);
         if (_position == end()) // if insert at the end.
@@ -389,12 +402,14 @@ public:
         }
     }
 
-    void insert(iterator _position, size_type n, const T &value)
+    void insert(iterator _position, size_type n, const T &value) // ! may throw exception
     {
         const difference_type insert_pos = std::distance(begin(), _position);
+
         // (1) 뒷 부분 따로 보유.
         FT::vector<T> tmp(_position, end());
         _PRIVATE::destroy(_position, end());
+
         // (2) 공간 필요시 확장.
         if (this->size() + n >= this->capacity()) {
             m_Reallocate((this->capacity() * 2) + n); // may throw exception
@@ -411,6 +426,7 @@ public:
     template <class InputIterator>
     void insert(iterator _position, InputIterator first, InputIterator last,
                 typename FT::enable_if<!(FT::is_integral<InputIterator>::value)>::type * = 0)
+                // ! may throw exception
     {
         const difference_type insert_pos = std::distance(begin(), _position);
 
@@ -425,6 +441,8 @@ public:
         if (this->size() + sizeToCopy >= this->capacity()) {
             m_Reallocate((this->capacity() * 2) + sizeToCopy);
         }
+
+        // 이때 메모리 재할당이 일어날 경우 기존 iterator는 해제된 메모리를 가리키므로, 반드시 업데이트해야 한다.
         const iterator safe_iter = iterator(&((*this)[insert_pos]));
 
         // (3) position 부터 value n개 삽입.
@@ -436,7 +454,7 @@ public:
         m_Finish = _backup_finish.base();
     }
 
-    iterator erase(iterator position)
+    iterator erase(iterator position) // ! may throw exception
     {
         //   c
         // 1 A 2 3 .
@@ -459,7 +477,7 @@ public:
     }
 
     // last - 1 까지 지움.
-    iterator erase(iterator first, iterator last)
+    iterator erase(iterator first, iterator last) // ! may throw exception
     {
         // b    f      l
         // 1 2 (3) (4) 5 6
@@ -484,7 +502,12 @@ public:
         return begin() + tmp_len;
     }
 
+
     void swap(FT::vector<T, allocator_type>& other)
+    // * C++17 이전까지는 예외를 던지지 않는다.
+    /* C++ 17 이후에 추가된 Exception
+                    _NOEXCEPT_(!__alloc_traits::propagate_on_container_swap::value ||
+                     __is_nothrow_swappable<allocator_type>::value); */
     {
         // 두 벡터간 데이터 교체가 iterator만 교체해주면 되기 때문에 몹시 쉬움.
         FT::swap(m_Start, other.m_Start);
@@ -492,11 +515,10 @@ public:
         FT::swap(m_End_of_storage, other.m_End_of_storage);
     }
 
-    void clear()
+    void clear() _NOEXCEPT
     {
         // size()가 0으로 바뀌고, 기존 원소들은 삭제.
-        _PRIVATE::destroy(m_Start, m_Finish);
-        m_Finish = m_Start;
+        _Vector_base::clear();
     }
 };
 
@@ -548,7 +570,9 @@ bool operator<=(const FT::vector<T,Allocator>& x, const FT::vector<T,Allocator>&
 // specialized algorithms:
 template <class T, class Allocator>
 inline
-void swap(FT::vector<T,Allocator>& x, FT::vector<T,Allocator>& y)
+void swap(FT::vector<T,Allocator>& x, FT::vector<T,Allocator>& y) /* _NOEXCEPT_(_NOEXCEPT_(x.swap(y))) */
+// * 마찬가지로, C++17 이전에는 x.swap이 예외를 던지지 않는다.
+// 그러나 C++17 이후부터는 x.swap이 예외를 던질 수 있기에 noexcept(noexcept(lhs.swap(rhs)))를 사용한다.
 {
     x.swap(y);
 }

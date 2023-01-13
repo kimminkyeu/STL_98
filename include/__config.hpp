@@ -5,10 +5,12 @@
 #ifndef FT_CONTAINER_CONFIG_HPP
 #define FT_CONTAINER_CONFIG_HPP
 
-/* ---------------------------------------------------
-   |  llvm __config 파일 내용을 참고하여 작성하였습니다.     |
-   |                                                 |
-   --------------------------------------------------*/
+//   --------------------------------------------------------------
+//   |  llvm __config 파일 내용을 참고하여 작성하였습니다.                 |
+//   |                                                            |
+//*  |  https://libcxx.llvm.org/DesignDocs/VisibilityMacros.html  |
+//   |                                                            |
+//   --------------------------------------------------------------
 
 // @ STD Allocator 사용시
 #define FT_USE_STD_ALLOCATORS
@@ -48,26 +50,31 @@
 #  endif
 #endif  // FT_STD_VER
 
+#if __has_attribute(internal_linkage)
+#  define FT_INTERNAL_LINKAGE __attribute__ ((internal_linkage))
+#else
+#  define FT_INTERNAL_LINKAGE _LIBCPP_ALWAYS_INLINE
+#endif
 
 // ---------------------------------------------------------------------------------------------
 // * setting inline attributes
 
-// @ FT_ALWAYS_INLINE
+// * FT_ALWAYS_INLINE
 /* - Ignore -fno-inline (this is what the documentation says).
    - Ignore the inlining limits hence inlining the function regardless. It also inlines functions with alloca calls, which inline keyword never does.
    - Not produce an external definition of a function with external linkage if marked with always_inline. */
 #define FT_ALWAYS_INLINE    inline __attribute__ ((__always_inline__))
 
-// @ FT_INTERNAL_LINKAGE
-// ? internal_linkage의 역할과 목적은?
+// * FT_INTERNAL_LINKAGE
+// Ref : https://learn.microsoft.com/en-us/cpp/cpp/program-and-linkage-cpp?view=msvc-170
 #if __has_attribute(internal_linkage)
 #  define FT_INTERNAL_LINKAGE   __attribute__ ((internal_linkage))
 #else
 #  define FT_INTERNAL_LINKAGE FT_ALWAYS_INLINE
 #endif
 
-// @ FT_HIDDEN // (1) hidden일 경우 해당 함수가 라이브러리 외부로 노출되지 않는다.
-// ? 근데 언제, 아땋게 쓰이는지는 아직 모르겠음. --> 더 알아볼 것.
+// * FT_HIDDEN // (1) hidden일 경우 해당 함수가 라이브러리 외부로 노출되지 않는다.
+// Mark a symbol as hidden so it will not be exported from shared libraries.
 #ifndef FT_HIDDEN
 #  if !defined(FT_DISABLE_VISIBILITY_ANNOTATIONS)
 #    define FT_HIDDEN __attribute__ ((__visibility__("hidden")))
@@ -79,6 +86,8 @@
 // @ function visibility in shared library
 #ifndef FT_FUNC_VIS
 #  if !defined(FT_DISABLE_VISIBILITY_ANNOTATIONS)
+      // Mark a symbol as being exported by the libc++ library.
+      // This attribute must be applied to the declaration of all functions exported by the libc++ dylib.
 #    define FT_FUNC_VIS __attribute__ ((__visibility__("default")))
 #  else
 #    define FT_FUNC_VIS
@@ -88,6 +97,8 @@
 // @ type visibility in shared library
 #ifndef FT_TYPE_VIS
 #  if !defined(FT_DISABLE_VISIBILITY_ANNOTATIONS)
+      // Mark a type’s typeinfo, vtable and members as having default visibility.
+      // This attribute cannot be used on class templates.
 #    define FT_TYPE_VIS __attribute__ ((__visibility__("default")))
 #  else
 #    define FT_TYPE_VIS
@@ -107,6 +118,25 @@
 #  endif
 #endif
 
+#define FT_HIDE_FROM_ABI_PER_TU_BY_DEFAULT
+
+// TU = Translate Unit
+#ifndef FT_HIDE_FROM_ABI_PER_TU
+#  ifndef FT_HIDE_FROM_ABI_PER_TU_BY_DEFAULT
+#    define FT_HIDE_FROM_ABI_PER_TU 0
+#  else
+#    define FT_HIDE_FROM_ABI_PER_TU 1
+#  endif
+#endif
+
+// Mark a function as not being part of the ABI of any final linked image that uses it.
+#ifndef FT_HIDE_FROM_ABI
+#  if FT_HIDE_FROM_ABI_PER_TU
+#    define FT_HIDE_FROM_ABI FT_HIDDEN FT_INTERNAL_LINKAGE
+#  else
+#    define FT_HIDE_FROM_ABI FT_HIDDEN FT_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
+#  endif
+#endif
 
 
 // * Deprecation macros.
@@ -124,9 +154,14 @@
 #  define FT_DEPRECATED
 #endif
 
-// * set inline attribute here...
 
-#define FT_INLINE_VISIBILITY    FT_ALWAYS_INLINE
+
+// *--------------------------------------------------------------------------------------------
+// Historical predecessor of _LIBCPP_HIDE_FROM_ABI – please use _LIBCPP_HIDE_FROM_ABI instead.
+#define FT_INLINE_VISIBILITY FT_HIDE_FROM_ABI
+// *--------------------------------------------------------------------------------------------
+
+
 
 // ---------------------------------------------------------------------------------------------
 // * because C++98 has no "noexcept" keyword ...
@@ -134,24 +169,24 @@
 #define FT_HAS_NO_NOEXCEPT
 #endif
 #ifndef FT_HAS_NO_NOEXCEPT
-#  define NOEXCEPT noexcept
-#  define NOEXCEPT_(x) noexcept(x)
+#  define _NOEXCEPT noexcept
+#  define _NOEXCEPT_(x) noexcept(x)
 #else
-#  define FT_NOEXCEPT throw()
-#  define FT_NOEXCEPT_(x)
+#  define _NOEXCEPT throw()
+#  define _NOEXCEPT_(x)
 #endif
 
 
 // * Fallthrough macro in Switch-Case
 // Use a function like macro to imply that it must be followed by a semicolon
 #if __cplusplus > 201402L && __has_cpp_attribute(fallthrough)
-#  define FT_FALLTHROUGH() [[fallthrough]]
+#  define _FALLTHROUGH() [[fallthrough]]
 #elif __has_cpp_attribute(clang::fallthrough)
-#  define FT_FALLTHROUGH() [[clang::fallthrough]]
+#  define _FALLTHROUGH() [[clang::fallthrough]]
 #elif __has_attribute(fallthrough) || _GNUC_VER >= 700
-#  define FT_FALLTHROUGH() __attribute__((__fallthrough__))
+#  define _FALLTHROUGH() __attribute__((__fallthrough__))
 #else
-#  define FT_FALLTHROUGH() ((void)0)
+#  define _FALLTHROUGH() ((void)0)
 #endif
 
 
