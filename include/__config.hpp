@@ -12,9 +12,6 @@
 //   |                                                            |
 //   --------------------------------------------------------------
 
-// @ STD Allocator 사용시
-#define FT_USE_STD_ALLOCATORS
-
 
 #ifdef __cplusplus
 
