@@ -109,6 +109,10 @@
 #ifndef FT_TEMPLATE_VIS
 #  if !defined(FT_DISABLE_VISIBILITY_ANNOTATIONS)
 #    if __has_attribute(__type_visibility__)
+      // Mark a type’s typeinfo and vtable as having default visibility.
+      // This macro has no effect on the visibility of the type’s member functions.
+      // GCC Behavior: GCC does not support Clang’s type_visibility(…) attribute. With GCC the visibility(…) attribute is used and member functions are affected.
+      // Windows Behavior: DLLs do not support dllimport/export on class templates. The macro has an empty definition on this platform.
 #      define FT_TEMPLATE_VIS __attribute__ ((__type_visibility__("default")))
 #    else
 #      define FT_TEMPLATE_VIS __attribute__ ((__visibility__("default")))

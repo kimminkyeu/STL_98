@@ -31,7 +31,7 @@ FT_BEGIN_GLOBAL_NAMESPACE
 // * | libcpp vector의 경우, m_Start, m_Finish, m_End_of_storage가 쓰이는 모든 경우의 수를 Vector_base의 멤버함수로 정리하였다.    |
 // * | 이를 통해 Vector class에서 위 m_멤버들을 감추고 있다. [ 멤버 데이터 캡슐화 ]                                               |
 // ? | 이렇게 함으로써 얻는 이점은 무엇일까? 아직 잘 모르겠다.                                                                    |
-// * | 또한 HIDE_FROM_ABI를 통해 해당 함수들의 이름을 어셈블리(?)에서 감추어 보안성을 높혔다.                                         |
+// * | 또한 HIDE_FROM_ABI를 통해 해당 함수들의 이름을 Translation Unit에서 감추어 보안성을 높혔다.                                  |
 // * -----------------------------------------------------------------------------------------------------------------
 // 아래 구현 버전은 libcpp의 구현 구조를 완전히 따르지 않는다.
 // 예를 들어, vector_base의 m_Finish 멤버 데이터를 vector 에서 접근한다.
@@ -53,13 +53,16 @@ protected:
     pointer m_Finish;
     pointer m_End_of_storage;
 
+    FT_HIDE_FROM_ABI
     pointer m_Allocate(size_t _n)
     { return m_Data_allocator.allocate(_n); }
 
+    FT_HIDE_FROM_ABI
     void m_Deallocate(pointer _p, size_t _n)
     { if (_p) { m_Data_allocator.deallocate(_p, _n); } }
 
     // reallocate memory + copy existing data to new memory region.
+    FT_HIDE_FROM_ABI
     void m_Reallocate(size_t newCapacity)
     {
         // exception0. maxsize
@@ -93,10 +96,12 @@ protected:
         m_End_of_storage = new_start + newCapacity;
     }
 
+    FT_HIDE_FROM_ABI
     explicit Vector_base(const allocator_type& _a)
         : m_Data_allocator(_a), m_Start(0), m_Finish(0), m_End_of_storage(0)
     {}
 
+    FT_HIDE_FROM_ABI
     explicit Vector_base(size_t _n, const allocator_type& _a)
         : m_Data_allocator(_a), m_Start(0), m_Finish(0), m_End_of_storage(0)
     {
@@ -110,9 +115,11 @@ protected:
 
 
     // ---------------------------------------------------------
+    FT_HIDE_FROM_ABI
     size_type capacity() const _NOEXCEPT
     { return m_End_of_storage - m_Start; }
 
+    FT_HIDE_FROM_ABI
     void clear() _NOEXCEPT
     {
         _PRIVATE::destroy(m_Start, m_Finish);
@@ -162,14 +169,16 @@ public:
     // ---------------------------------------------------------------------------
 
     //* Constructs an empty container, with no elements
+    FT_HIDE_FROM_ABI
     explicit vector(const allocator_type& _allocator = allocator_type())
     // _NOEXCEPT_(is_nothrow_copy_constructible<allocator_type>::value)
         : _Vector_base(_allocator)
     {}
 
     //* Constructs a container with n elements. Each element is a copy of val.
+    FT_HIDE_FROM_ABI
     explicit vector(size_type _n, const T &_value = T(), const allocator_type& _allocator = allocator_type())
-    // ! may throw exception
+    // may throw exception
         : _Vector_base(_n, _allocator)
     {
         std::uninitialized_fill_n(m_Start, _n, _value); // using function at <memory.h>, Cpp98
@@ -184,27 +193,29 @@ public:
     vector(InputIterator first, InputIterator last, const allocator_type& _allocator = allocator_type(),
                 typename FT::enable_if<!(FT::is_integral<InputIterator>::value)>::type * = 0)
                 // if not integral, then value is false.
-                // ! may throw exception
+                // may throw exception
         : _Vector_base(std::distance(first, last), _allocator)
     {
         m_Finish = std::uninitialized_copy(first, last, m_Start);
     }
 
     //* Copy constructor
-    explicit vector(const FT::vector<T, allocator_type> &x)  // ! may throw exception
+    explicit vector(const FT::vector<T, allocator_type> &x)  // may throw exception
         : _Vector_base(x.size(), x.get_allocator())
     {
         m_Finish = std::uninitialized_copy(x.begin(), x.end(), m_Start);
     }
 
-    ~vector() // ! may throw exception
+    FT_HIDE_FROM_ABI
+    ~vector() // may throw exception
     {
         // (1) call destructor of vector_alloc_base
         // (2) call destructor of vector_base
         _PRIVATE::destroy(m_Start, m_Finish);
     }
 
-    vector_type& operator=(const vector_type& other) // ! may throw exception
+    FT_HIDE_FROM_ABI
+    vector_type& operator=(const vector_type& other) // may throw exception
     {
         // if self assignment
         if (*this == other) return *this;
@@ -226,53 +237,31 @@ public:
         return (*this);
     }
 
-    //* Assigns new contents to the vector, replacing its current contents, and modifying its size accordingly.
-    // assign도 integral 형에 대한 enable_if가 필요하다.
-    template <class InputIterator>
-    void assign(InputIterator first, InputIterator last,
-                typename FT::enable_if<!(FT::is_integral<InputIterator>::value)>::type * = 0)
-                // ! may throw exception
-    {
-        this->clear();
-        m_Reallocate(last - first);
-        m_Finish = std::uninitialized_copy(first, last, m_Start);
-    }
-
-    void assign(size_type n, const T &value) // ! may throw exception
-    {
-        // 벡터 객체에 이전에 있었던 원소들은 모두 삭제하고, 인자로 받은 새로운 내용을 집어 넣는다. 원래 내용을 다 지우고 원소 u 를 n 개 가지는 벡터로 만든다.
-        this->clear();
-        if (n > this->capacity())
-            m_Reallocate(n);
-        std::uninitialized_fill_n(m_Start, n, value);
-        m_Finish = m_Start + n;
-    }
-
     // ---------------------------------------------------------------------------
     // iterators:
 
-    iterator begin() _NOEXCEPT
+    FT_HIDE_FROM_ABI iterator begin() _NOEXCEPT
     { return iterator(m_Start); }
 
-    const_iterator begin() const _NOEXCEPT
+    FT_HIDE_FROM_ABI const_iterator begin() const _NOEXCEPT
     { return const_iterator(m_Start); }
 
-    iterator end() _NOEXCEPT
+    FT_HIDE_FROM_ABI iterator end() _NOEXCEPT
     { return iterator(m_Finish); }
 
-    const_iterator end() const _NOEXCEPT
+    FT_HIDE_FROM_ABI const_iterator end() const _NOEXCEPT
     { return const_iterator(m_Finish); }
 
-    reverse_iterator rbegin() _NOEXCEPT
+    FT_HIDE_FROM_ABI reverse_iterator rbegin() _NOEXCEPT
     { return reverse_iterator(end()); }
 
-    const_reverse_iterator rbegin() const _NOEXCEPT
+    FT_HIDE_FROM_ABI const_reverse_iterator rbegin() const _NOEXCEPT
     { return const_reverse_iterator(end()); }
 
-    reverse_iterator rend() _NOEXCEPT
+    FT_HIDE_FROM_ABI reverse_iterator rend() _NOEXCEPT
     { return reverse_iterator(begin()); }
 
-    const_reverse_iterator rend() const _NOEXCEPT
+    FT_HIDE_FROM_ABI const_reverse_iterator rend() const _NOEXCEPT
     { return const_reverse_iterator(begin()); }
 
 
@@ -280,6 +269,7 @@ public:
     // 23.2.4.2 capacity:
 
     //* Returns the number of elements in the vector.
+    FT_HIDE_FROM_ABI
     size_type size() const _NOEXCEPT
     { return static_cast<size_type>(end() - begin()); }
 
@@ -291,14 +281,16 @@ public:
     { return (std::numeric_limits<size_type>::max() / sizeof(value_type)); }
 
     //* Returns the size of the storage space currently allocated for the vector, expressed in terms of elements.
+    FT_HIDE_FROM_ABI
     size_type capacity() const _NOEXCEPT
     { return _Vector_base::capacity(); }
 
+    FT_HIDE_FROM_ABI
     bool empty() const _NOEXCEPT
     { return ( begin() == end()); }
 
     //* Resizes the container so that it contains n elements.
-    void resize(size_type _n, T _value = T()) // ! may throw exception
+    void resize(size_type _n, T _value = T()) // may throw exception
     {
         if (_n == this->size())
             return ;
@@ -314,7 +306,7 @@ public:
     }
 
     //* Requests that the vector capacity be at least enough to contain n elements.
-    void reserve(size_type n) // ! may throw exception
+    void reserve(size_type n) // may throw exception
     {
         if (n > this->capacity())
             m_Reallocate(n);
@@ -323,26 +315,34 @@ public:
     // ---------------------------------------------------------------------------
     // element access:
 
-    allocator_type get_allocator() const _NOEXCEPT
+    FT_HIDE_FROM_ABI allocator_type get_allocator() const _NOEXCEPT
     { return m_Data_allocator; }
 
-    value_type* data() _NOEXCEPT
+    FT_HIDE_FROM_ABI value_type* data() _NOEXCEPT
     { return m_Start; }
 
-    const value_type* data() const _NOEXCEPT
+    FT_HIDE_FROM_ABI const value_type* data() const _NOEXCEPT
     { return m_Start; }
 
-    reference operator[](size_type n) _NOEXCEPT
-    {
-        return *(begin() + n);
-    }
+    FT_HIDE_FROM_ABI reference operator[](size_type n) _NOEXCEPT
+    { return *(begin() + n); }
 
-    const_reference operator[](size_type n) const _NOEXCEPT
-    {
-        return *(begin() + n);
-    }
+    FT_HIDE_FROM_ABI const_reference operator[](size_type n) const _NOEXCEPT
+    { return *(begin() + n); }
 
-    const_reference at(size_type n) const // ! may throw exception
+    FT_HIDE_FROM_ABI reference front() _NOEXCEPT
+    { return *begin(); }
+
+    FT_HIDE_FROM_ABI const_reference front() const _NOEXCEPT
+    { return *begin(); }
+
+    FT_HIDE_FROM_ABI reference back() _NOEXCEPT
+    { return *(--end()); }
+
+    FT_HIDE_FROM_ABI const_reference back() const _NOEXCEPT
+    { return *(--end()); }
+
+    const_reference at(size_type n) const // may throw exception
     {
        if (n > this->size()) {
             throw std::out_of_range("vector");
@@ -350,7 +350,7 @@ public:
         return this->operator[](n);
     }
 
-    reference at(size_type n)  // ! may throw exception
+    reference at(size_type n)  // may throw exception
     {
         if (n > this->size()) {
             throw std::out_of_range("vector");
@@ -358,22 +358,39 @@ public:
         return this->operator[](n);
     }
 
-    reference front() _NOEXCEPT
-    { return *begin(); }
-
-    const_reference front() const _NOEXCEPT
-    { return *begin(); }
-
-    reference back() _NOEXCEPT
-    { return *(--end()); }
-
-    const_reference back() const _NOEXCEPT
-    { return *(--end()); }
-
     // ---------------------------------------------------------------------------
     // 23.2.4.3 modifiers:
 
-    void push_back(const T &value) // ! may throw exception
+    //* Assigns new contents to the vector, replacing its current contents, and modifying its size accordingly.
+    // assign도 integral 형에 대한 enable_if가 필요하다.
+    template <class InputIterator>
+    void assign(InputIterator first, InputIterator last,
+                typename FT::enable_if<!(FT::is_integral<InputIterator>::value)>::type * = 0)
+                // may throw exception
+    {
+        this->clear();
+        m_Reallocate(last - first);
+        m_Finish = std::uninitialized_copy(first, last, m_Start);
+    }
+
+    void assign(size_type n, const T &value) // may throw exception
+    {
+        // 벡터 객체에 이전에 있었던 원소들은 모두 삭제하고, 인자로 받은 새로운 내용을 집어 넣는다. 원래 내용을 다 지우고 원소 u 를 n 개 가지는 벡터로 만든다.
+        this->clear();
+        if (n > this->capacity())
+            m_Reallocate(n);
+        std::uninitialized_fill_n(m_Start, n, value);
+        m_Finish = m_Start + n;
+    }
+
+    FT_HIDE_FROM_ABI
+    void clear() _NOEXCEPT
+    {
+        _Vector_base::clear();
+    }
+
+    FT_HIDE_FROM_ABI
+    void push_back(const T &value) // may throw exception
     {
         if (this->capacity() == 0) {
             reserve(1);
@@ -385,6 +402,7 @@ public:
         ++m_Finish;
     }
 
+    FT_HIDE_FROM_ABI
     void pop_back() _NOEXCEPT
     {
         if (this->empty()) {
@@ -393,7 +411,7 @@ public:
         _PRIVATE::destroy(--m_Finish);
     }
 
-    iterator insert(iterator _position, const T& _value) // ! may throw exception
+    iterator insert(iterator _position, const T& _value) // may throw exception
     {
         const difference_type insert_pos = std::distance(begin(), _position);
         if (_position == end()) // if insert at the end.
@@ -412,7 +430,7 @@ public:
         }
     }
 
-    void insert(iterator _position, size_type n, const T &value) // ! may throw exception
+    void insert(iterator _position, size_type n, const T &value) // may throw exception
     {
         const difference_type insert_pos = std::distance(begin(), _position);
 
@@ -436,7 +454,7 @@ public:
     template <class InputIterator>
     void insert(iterator _position, InputIterator first, InputIterator last,
                 typename FT::enable_if<!(FT::is_integral<InputIterator>::value)>::type * = 0)
-                // ! may throw exception
+                // may throw exception
     {
         const difference_type insert_pos = std::distance(begin(), _position);
 
@@ -464,7 +482,8 @@ public:
         m_Finish = _backup_finish.base();
     }
 
-    iterator erase(iterator position) // ! may throw exception
+    FT_HIDE_FROM_ABI
+    iterator erase(iterator position) // may throw exception
     {
         //   c
         // 1 A 2 3 .
@@ -487,7 +506,8 @@ public:
     }
 
     // last - 1 까지 지움.
-    iterator erase(iterator first, iterator last) // ! may throw exception
+    FT_HIDE_FROM_ABI
+    iterator erase(iterator first, iterator last) // may throw exception
     {
         // b    f      l
         // 1 2 (3) (4) 5 6
@@ -525,53 +545,48 @@ public:
         FT::swap(m_End_of_storage, other.m_End_of_storage);
     }
 
-    void clear() _NOEXCEPT
-    {
-        // size()가 0으로 바뀌고, 기존 원소들은 삭제.
-        _Vector_base::clear();
-    }
 };
 
 // Non-member function.
 // -----------------------------------------------------------
 
 template <class T, class Allocator>
-inline
+inline FT_HIDE_FROM_ABI
 bool operator==(const FT::vector<T,Allocator>& x, const FT::vector<T,Allocator>& y)
 {
     return x.size() == y.size() && FT::equal(x.begin(), x.end(), y.begin());
 }
 
 template <class T, class Allocator>
-inline
+inline FT_HIDE_FROM_ABI
 bool operator!=(const FT::vector<T,Allocator>& x, const FT::vector<T,Allocator>& y)
 {
     return !(x == y);
 }
 
 template <class T, class Allocator>
-inline
+inline FT_HIDE_FROM_ABI
 bool operator< (const FT::vector<T,Allocator>& x, const FT::vector<T,Allocator>& y)
 {
     return FT::lexicographical_compare(x.begin(), x.end(), y.begin(), y.end());
 }
 
 template <class T, class Allocator>
-inline
+inline FT_HIDE_FROM_ABI
 bool operator> (const FT::vector<T,Allocator>& x, const FT::vector<T,Allocator>& y)
 {
     return y < x;
 }
 
 template <class T, class Allocator>
-inline
+inline FT_HIDE_FROM_ABI
 bool operator>=(const FT::vector<T,Allocator>& x, const FT::vector<T,Allocator>& y)
 {
     return !(x < y);
 }
 
 template <class T, class Allocator>
-inline
+inline FT_HIDE_FROM_ABI
 bool operator<=(const FT::vector<T,Allocator>& x, const FT::vector<T,Allocator>& y)
 {
     return !(y < x);
@@ -579,9 +594,9 @@ bool operator<=(const FT::vector<T,Allocator>& x, const FT::vector<T,Allocator>&
 
 // specialized algorithms:
 template <class T, class Allocator>
-inline
-void swap(FT::vector<T,Allocator>& x, FT::vector<T,Allocator>& y) /* _NOEXCEPT_(_NOEXCEPT_(x.swap(y))) */
-// * 마찬가지로, C++17 이전에는 x.swap이 예외를 던지지 않는다.
+inline FT_HIDE_FROM_ABI
+void swap(FT::vector<T,Allocator>& x, FT::vector<T,Allocator>& y) /* (C++17) _NOEXCEPT_(_NOEXCEPT_(x.swap(y))) */
+// C++17 이전에는 x.swap이 예외를 던지지 않는다.
 // 그러나 C++17 이후부터는 x.swap이 예외를 던질 수 있기에 noexcept(noexcept(lhs.swap(rhs)))를 사용한다.
 {
     x.swap(y);
