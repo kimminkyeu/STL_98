@@ -174,7 +174,7 @@
 #  define _NOEXCEPT_(x) noexcept(x)
 #else
 #  define _NOEXCEPT throw()
-#  define _NOEXCEPT_(x)
+#  define _NOEXCEPT_(x) // just for noexcept(x). does nothing in C++98 version
 #endif
 
 

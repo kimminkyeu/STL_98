@@ -30,7 +30,7 @@ FT_BEGIN_GLOBAL_NAMESPACE
 // * -----------------------------------------------------------------------------------------------------------------
 // * | libcpp vector의 경우, m_Start, m_Finish, m_End_of_storage가 쓰이는 모든 경우의 수를 Vector_base의 멤버함수로 정리하였다.    |
 // * | 이를 통해 Vector class에서 위 m_멤버들을 감추고 있다. [ 멤버 데이터 캡슐화 ]                                               |
-// ? | 이렇게 함으로써 얻는 이점은 무엇일까? 아직 잘 모르겠다.                                                                    |
+//   | 이렇게 함으로써 얻는 이점은 무엇일까? 아직 잘 모르겠다.                                                                    |
 // * | 또한 HIDE_FROM_ABI를 통해 해당 함수들의 이름을 Translation Unit에서 감추어 보안성을 높혔다.                                  |
 // * -----------------------------------------------------------------------------------------------------------------
 // 아래 구현 버전은 libcpp의 구현 구조를 완전히 따르지 않는다.
@@ -135,7 +135,7 @@ protected:
 // ---------------------------------------------------------------
 
 template<typename T, class Allocator = std::allocator<T> >
-class vector : protected Vector_base<T, Allocator>
+class FT_TEMPLATE_VIS vector : protected Vector_base<T, Allocator>
 {
 private:
     typedef Vector_base<T, Allocator>                   _Vector_base;
