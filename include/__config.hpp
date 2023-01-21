@@ -13,7 +13,22 @@
 //   --------------------------------------------------------------
 
 
-#ifdef __cplusplus
+// --------------------------------------------------------------------------------------------
+// * for Debug mode - assert enable.
+
+#define FT_DEBUG_MODE
+
+#include <cassert> // for assert
+// https://cplusplus.com/reference/cassert/assert/
+#ifndef FT_DEBUG_MODE
+      #define NDEBUG
+#endif
+
+
+
+
+
+
 
 // ---------------------------------------------------------------------------------------------
 // * handle namespace of library (ex. ft::vector, ft::map)
@@ -31,6 +46,9 @@
 
 // ---------------------------------------------------------------------------------------------
 //  * C++ version defined macro */
+
+#ifdef __cplusplus
+
 #ifndef FT_STD_VER
 #  if   __cplusplus <= 199711L
 #   define FT_STD_VER 1 // C++98

@@ -9,6 +9,8 @@
 int		main(void)
 {
 
+	ft::vector<int> vec;
+
 
 
 	return (0);
