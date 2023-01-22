@@ -5,21 +5,18 @@
 #ifndef FT_CONTAINER___LEFT_LEANING_REDBLACK_HPP
 #define FT_CONTAINER___LEFT_LEANING_REDBLACK_HPP
 
-// #include <functional>
-// #include <map>
-// #include <set>
 
+// TODO:  remove later
 #include <iostream>
-#include "__config.hpp"
-#include <exception>
-#include <stdexcept>
-#include <stdlib.h>
-#include <functional>
-#include "utility.hpp"
+#include <cstdlib>
 
-// FT_BEGIN_PRIVATE_NAMESPACE
-FT_BEGIN_GLOBAL_NAMESPACE
 
+#include <exception>    // for exception
+#include <functional>   // for std::less
+#include "__config.hpp" // for macros
+#include "utility.hpp"  // for ft::pair
+
+FT_BEGIN_PRIVATE_NAMESPACE
 
 // ---------------------------------------------------------------
 // |                                                             |
@@ -45,6 +42,7 @@ class Tree_node_alloc_base
 protected: // typedef and namespace scope
 
     // @ rebinding allocator<T> to allocator<node<T>>
+    // _NodeType is <RbNode<T, Compare>.
     typedef typename Allocator::template rebind<_NodeType>::other  node_allocator_type;
 
     // @ using typename of rebound allocator's typedef
@@ -122,49 +120,74 @@ struct RedBlackNode
 
     typedef RedBlackNode<_KeyType, _Compare>     node_type;
     typedef node_type*                           node_pointer;
-
     typedef _KeyType                             key_type;
     typedef _Compare                             value_compare;
 
 // *-- member data ----------------------------------------------------------------------------
     _KeyType            key;  // key would be std::pair<A, B> if map. if set, key would be single type.
     bool                color;          // color of parent link
-    size_t              size;           // subtree count
-
     RedBlackNode*       left;
     RedBlackNode*       right;
     RedBlackNode*       parent;         // for iterator system
 // *-------------------------------------------------------------------------------------------
 
     explicit RedBlackNode(_KeyType _key)
-            : key(_key), left(NULL), right(NULL), color(RED), size(0), parent(NULL)
+            : key(_key), left(NULL), right(NULL), color(RED), /* size(0),*/ parent(NULL)
     {};
 
-    RedBlackNode(_KeyType _key, bool _color, size_t _size)
-            : key(_key), color(_color), size(_size),  left(NULL), right(NULL), parent(NULL)
+    RedBlackNode(_KeyType _key, bool _color)
+            : key(_key), color(_color), left(NULL), right(NULL), parent(NULL)
     {}
 
     RedBlackNode(const node_type& other)
-            : key(other.key), color(other.color), size(other.size), left(other.left), right(other.right), parent(other.parent)
+            : key(other.key), color(other.color), left(other.left), right(other.right), parent(other.parent)
     {}
 
-    // Wrapper private function to handle equality(==) check.
-    // std::less only provides (<) operator.
-    // int compare_node_to(const node_type& other_node) const
-    // {
-    //     return compare_key_to(other_node.key);
-    // }
+    // if Successor doesn't exist, then return NULL.
+    node_pointer getSuccessor()
+    {
+        // Case 1.
+        if (this->right != NULL)
+        {
+            node_pointer curr = this->right;
+            while (curr->left != NULL) {
+                curr = curr->left;
+            }
+            return curr;
+        }
+        // Case 2.
+        node_pointer above = this->parent;
+        node_pointer me = this;
+        while (above != NULL && me == above->right) // go up if I'm right node of parent.
+        {
+            me = above;
+            above = above->parent;
+        }
+        return above;
+    }
 
-    // // usage:: node.__compare_key_to(x.key)
-    // int compare_key_to(const key_type& other_key) const
-    // {
-    //     if (value_compare(this->key, other_key) == true) { // this < other
-    //         return 1;
-    //     } else if (value_compare(other_key, this->key) == true) { // this > other
-    //         return -1;
-    //     }
-    //     return 0; // this == other
-    // }
+    // if Predecessor doesn't exist, then return NULL.
+    node_pointer getPredecessor()
+    {
+        // Case 1.
+        if (this->left != NULL)
+        {
+            node_pointer curr = this->left;
+            while (curr->right != NULL) {
+                curr = curr->right;
+            }
+            return curr;
+        }
+        // Case 2.
+        node_pointer above = this->parent;
+        node_pointer me = this;
+        while (above != NULL && me == above->left) // go up if I'm left node of parent.
+        {
+            me = above;
+            above = above->parent;
+        }
+        return above;
+    }
 };
 
 
@@ -189,29 +212,6 @@ public:
         return (comp(x.first, y.first));
     }
 };
-
-// // TODO:   change this compare class to set_compare.
-// template <class Key, class Compare = std::less<Key> >
-// class set_value_compare
-// {
-// public:
-//     typedef Key value_type;
-
-// protected:
-//     Compare comp;
-
-//     set_value_compare(Compare c)
-//         : comp(c)
-//     {}
-
-// public:
-
-//     bool operator()(const value_type &x, const value_type &y) const
-//     {
-//         return (comp(x, y));
-//     }
-// };
-
 
 // ---------------------------------------------------------------
 // |                                                             |
@@ -259,35 +259,12 @@ public: // typedefs
     typedef _Compare                                                    value_compare_type;
     typedef node_type*                                                  node_pointer; // equivalant to node_pointer*
     typedef LeftLeaningRedBlack<key_type, _Compare, _Allocator>         tree_type;
-    // typedef typename node_allocator_type::pointer                   node_pointer; // equivalant to node_pointer*
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-protected:
-    // typedef Tree_node_alloc_base<node_type, key_type, _Allocator>   _node_Alloc_base;
-    // typedef typename _node_Alloc_base::node_allocator_type          node_allocator_type;
-    // typedef typename node_allocator_type::size_type                 size_type;
 
 private: // private data member
 // *----------------------------------------------
     node_pointer    m_Root;
     _Compare        m_Value_compare; // default compare function class.
+
     // ! 어떻게 하면 set 과 map에 일관된 compare 함수를 연결할 수 있지?
 // *----------------------------------------------
 
@@ -297,19 +274,28 @@ public: // constructor, destructor
         : m_Root(NULL), m_Value_compare(value_compare_type())
         {}
 
+    ~LeftLeaningRedBlack()
+    {
+        // delete tree every data.
+        clear();
+        m_Root = NULL;
+    }
+
+
 // ------------------------------------------------------------
 //       RB Node helper method.
 // ------------------------------------------------------------
 
 private:
-    node_pointer __allocate_and_construct_RbNode(const key_type& _key, const bool& _color, const size_t& _size)
+    node_pointer __allocate_and_construct_RbNode(const key_type& _key, const bool& _color)
     {
         node_pointer address_of_new_node = this->__allocate_single_node();
-        this->__construct_node_by_value_at(address_of_new_node, node_type(_key, _color, _size));
+        this->__construct_node_by_value_at(address_of_new_node, node_type(_key, _color));
         return address_of_new_node;
     }
 
-    void __deallocate_and_destruct_RbNode(node_pointer p)
+    // ! Node를 destory 하지만, Key는 destory하지 않는다. 이게 중요하다.
+    void __destroy_and_deallocate_RbNode(node_pointer p)
     {
         this->__destroy_address_of(p);
         this->__deallocate_single_node(p);
@@ -333,20 +319,30 @@ private:
     }
 
     // number of node in subtree rooted at x; 0 if x is null
-    size_t __size(node_pointer x)
-    {
-        if (x == NULL) return 0;
-        return (x->size);
-    }
+//    size_t __size(node_pointer x)
+//    {
+//        if (x == NULL) return 0;
+//        return (x->size);
+//    }
 
 // ------------------------------------------------------------
 //       Standard BST search
 // ------------------------------------------------------------
 public:
-    size_t size()
+    node_type min()
     {
-        return __size(m_Root);
+         if (isEmpty()) throw std::runtime_error("calls min() with empty symbol table");
+         return (begin()->key);
     }
+
+    node_pointer begin()
+    {
+        if (isEmpty()) throw std::runtime_error("calls min() with empty symbol table");
+        node_pointer t = __min(m_Root);
+        return t;
+    }
+
+    node_pointer end() { return NULL; }
 
     // return true is tree is empty
     bool isEmpty()
@@ -354,7 +350,7 @@ public:
         return (m_Root == NULL);
     }
 
-    // throw exception is key_type is null
+    // find node, which contains target key.
     node_pointer getNode(const key_type& target_key)
     {
         return __getNode(m_Root, target_key);
@@ -382,7 +378,6 @@ public:
         return (getNode(key) != NULL);
     }
 
-
     // ------------------------------------------------------------
     //       Red Black tree insertion
     // ------------------------------------------------------------
@@ -398,21 +393,27 @@ public:
 
 private:
 
-
-
     node_pointer __put(node_pointer curr, const key_type& target_key)
     {
-        // if empty tree
+        // if end node.
         if (curr == NULL) {
-             return (__allocate_and_construct_RbNode(target_key, RED, 1));
+             return (__allocate_and_construct_RbNode(target_key, RED));
         }
         // if not empty tree, then recursively insert data.
         // const int cmp = curr->compare_key_to(target_key);
         const int cmp = __compare_value(curr->key, target_key);
 
-        if      (cmp < 0)   curr->left  = __put(curr->left, target_key);
-        else if (cmp > 0)   curr->right = __put(curr->right, target_key);
-        else                curr->key   = target_key;
+        if      (cmp < 0)   {
+            curr->left  = __put(curr->left, target_key);
+            curr->left->parent = curr; // ! Really needed?
+        }
+        else if (cmp > 0)   {
+            curr->right = __put(curr->right, target_key);
+            curr->right->parent = curr; // ! Really needed?
+        }
+        else                {
+            curr->key   = target_key;
+        }
 
         // ----------------------------------------
         // |    Fix-up any right-leaning links    |
@@ -444,7 +445,6 @@ private:
              Red <- O   O -> Red                             */
         if (__isRed(curr->right) && __isRed(curr->left)) { __flipColors(curr); }
 
-        curr->size = __size(curr->left) + __size(curr->right) + 1;
         return curr;
     }
 
@@ -456,9 +456,9 @@ private:
     // * http://www.teachsolaisgames.com/articles/balanced_left_leaning.html
     // 여기를 보면서 상세한 내용을 이해하는게 좋겠다.
 
-private:
+public:
     // Removes the smallest key and associated value from the symbol table.
-    void __eraseMin()
+    void eraseMin()
     {
         if (isEmpty()) throw std::runtime_error("BST underflow");
 
@@ -471,7 +471,6 @@ private:
         if (!isEmpty()) {
             m_Root->color = BLACK;
         }
-        // ! 어디에서 삭제 로직이 없는데 어찌 된겨?
     }
 
 private:
@@ -487,7 +486,7 @@ private:
         // * ----------------------------------------------------
         if (curr->left == NULL) // ! 똑같이, 여기서 삭제 발생.
         {
-             __deallocate_and_destruct_RbNode(curr);
+            __destroy_and_deallocate_RbNode(curr);
             return NULL;
         }
         // * ----------------------------------------------------
@@ -509,6 +508,17 @@ private:
     }
 
 public:
+    // Remove everything.
+    void clear()
+    {
+        node_pointer ptr = begin();
+        while (ptr != end())
+        {
+            ptr = ptr->getSuccessor();
+            eraseMin();
+        }
+    }
+
     // Removes the specified key and its associated value from this symbol table
     // (if the key is in this symbol table).
     // * C++98 versions of Set and Map's erase functions return no value.
@@ -519,16 +529,13 @@ public:
         m_Root = __erase(m_Root, key);
 
         // Assuming we have not deleted the last node from the tree, we
-        // need to force the root to be a black node to conform with the
-        // the rules of a red-black tree.
+        // need to force the root to be a black node to conform with the rules of a red-black tree.
         if (!isEmpty()) { m_Root->color = BLACK; }
     }
 
 private:
     node_pointer __erase(node_pointer curr, const key_type& key)
     {
-        assert(__getNode(curr, key) != NULL);
-
         if (__compare_value(curr->key, key) < 0)
         // ! if key you want do delete is on the left <--
         {
@@ -555,8 +562,7 @@ private:
             if (__compare_value(curr->key, key) == 0 // if leaf
                 && (curr->right == NULL))
             {
-                // TODO:  delete node from memory.
-                __deallocate_and_destruct_RbNode(curr);
+                __destroy_and_deallocate_RbNode(curr);
                 return NULL;
             }
 
@@ -604,17 +610,12 @@ private:
 
 private:
     // ------------------------------------------------------------
-    //       Red Black tree helper functions.
+    //      * Red Black tree elementary operations
     // ------------------------------------------------------------
 
     // flip the colors of a node and its two children
     void __flipColors(node_pointer h)
     {
-         // h must have opposite color of its two children
-        assert ((h != NULL) && (h->left != NULL) && (h->right != NULL));
-        assert ((!__isRed(h) &&  __isRed(h->left) &&  __isRed(h->right))
-             || (__isRed(h)  && !__isRed(h->left) && !__isRed(h->right)));
-
         h->color = !h->color;
         h->left->color = !h->left->color;
         h->right->color = !h->right->color;
@@ -623,26 +624,42 @@ private:
     // make a right-leaning link lean to the left
     node_pointer __rotateLeft(node_pointer h)
     {
-        assert ((h != NULL) && __isRed(h->right));
-
         node_pointer new_parent = h->right;
         h->right = new_parent->left;
+
+        // + update parent pointer for iterators
+        if (h->right != NULL) { h->right->parent = h; }
+
         new_parent->left = h;
         new_parent->color = h->color;
         h->color = RED;
+
+        // + update parent pointer for iterators
+        node_pointer original_grandparent = h->parent;
+        h->parent = new_parent;
+        new_parent->parent = original_grandparent;
+
         return new_parent;
     }
 
     // make a left-leaning link lean to the right
     node_pointer __rotateRight(node_pointer h)
     {
-        assert ((h != NULL) && __isRed(h->left));
-
         node_pointer new_parent = h->left;
         h->left = new_parent->right;
+
+        // + update parent pointer for iterators
+        if (h->left != NULL) { h->left->parent = h; }
+
         new_parent->right = h;
         new_parent->color = h->color;
         h->color = RED;
+
+        // + update parent pointer for iterators
+        node_pointer original_grandparent = h->parent;
+        h->parent = new_parent;
+        new_parent->parent = original_grandparent;
+
         return new_parent;
     }
 
@@ -696,8 +713,6 @@ private:
     // These rule violations will be repaired when recursing back out of the tree by the FixUp function.
     node_pointer __fixUp(node_pointer h)
     {
-        assert (h != NULL);
-
         // 우리가 이미 재귀에서 return으로 FixUp을 호출하고 있기 때문에, 재귀적으로 호출할 필요가 없음.
 
         // Fix right-leaning red nodes.
@@ -711,7 +726,6 @@ private:
         // Split 4-nodes.
         if (__isRed(h->right) && __isRed(h->left))      { __flipColors(h); }
 
-        h->size = __size(h->left) + __size(h->right) + 1;
         return h;
     }
 
@@ -721,12 +735,6 @@ private:
     // ------------------------------------------------------------
 
     // Returns the smallest key in the symbol table.
-    key_type __min()
-    {
-         if (isEmpty()) throw std::runtime_error("calls min() with empty symbol table");
-         node_pointer t = __min(m_Root);
-         return t->key;
-    }
 
     // the smallest key in subtree rooted at x; null if no such key
     // * 후속자 노드 찾는데 쓰인다. (node -> right -> left -> left ...)
@@ -735,17 +743,12 @@ private:
     // The contents of that leaf node can then be used to replace the value being deleted.
     node_pointer __min(node_pointer x)
     {
-        assert(x != NULL);
-
         if (x->left == NULL) { return x; }
         else                 { return __min(x->left); }
     }
 
-
 private:
     // 아래 friend 함수는 class의 멤버함수가 아니다. 따라서 포함되지 않는다.
-    // 이건 밖에 정의하는 것과 동일하다.
-    // template<typename T>
     // TODO:  Remove this function later!!
     template<typename U>
     friend void printTree(const LeftLeaningRedBlack<U>& tree);
@@ -759,34 +762,10 @@ void _printWithColor(const KeyType& data, const std::string& color = PRINT_RESET
 }
 
 
-// TODO:  Remove this function later!!
-// template <typename KeyType, class Compare>
-// void _printTree(const std::string& prefix, const RedBlackNode<KeyType, Compare>* node, bool isLeft)
-// {
-//     if( node != nullptr )
-//     {
-//         std::cout << prefix;
-
-//         std::cout << (isLeft ? "├──" : "└──" );
-
-//         // print the value of the node
-//         // 0 for background Color(Black)
-//         // A for text color(Green)
-//         if (node->color == RED)
-//             _printWithColor(node->key, PRINT_RED);
-//         else
-//             _printWithColor(node->key);
-//         // std::cout << node->key << std::endl;
-
-//         // enter the next tree level - left and right branch
-//         _printTree( prefix + (isLeft ? "│   " : "    "), node->left, true);
-//         _printTree( prefix + (isLeft ? "│   " : "    "), node->right, false);
-//     }
-// }
 
 
 
-
+// TODO:  Remove this functions later!!
 struct Trunk
 {
     Trunk *prev;
@@ -853,12 +832,13 @@ template <typename KeyType>
 void printTree(const LeftLeaningRedBlack<KeyType> &tree)
 {
     std::cout << "\n";
-    // to use private member m_Root, i used friend keyword.
+    std::cout << "--------------------------------------\n";
     _printTree(tree.m_Root, NULL,  false);
+    std::cout << "--------------------------------------\n";
     std::cout << "\n";
 }
 
-// FT_END_PRIVATE_NAMESPACE
-FT_END_GLOBAL_NAMESPACE
+ FT_END_PRIVATE_NAMESPACE
+// FT_END_GLOBAL_NAMESPACE
 
 #endif //FT_CONTAINER___LEFT_LEANING_REDBLACK_HPP
