@@ -9,23 +9,37 @@ FT_BEGIN_GLOBAL_NAMESPACE
 
 
 /* ------------------------------------------------------------------------
- * * why do we need iterator_traits ?
+ * [ * why do we need iterator_traits ? ]
+    Ref: https://stackoverflow.com/questions/71737631/what-is-the-design-purpose-of-iterator-traits
+
+    --------------
+    |  Example)  |
+    --------------
 
     template<class Iter>
     void myAlgorithm(Iter begin, Iter end)
     {
+        * iterator_traits는 " 일종의 프로토콜 " 이다.
         -----------------------------------------------------------
         | 현재 이 상황에서 알고리즘 작성자는 Iter가 어떤 컨테이너인지 모른다.   |
         | 몰라도 문제가 없도록 generic한 알고리즘을 작성하는 것이 중요하다.    |
         | 그래서 container 종류에 관계 없이 iterator의 정보를 얻어낼 수 있는 |
         | Uniform 한 데이터 접근 방법을 약속 해야한다.                    |
-        | iterator_traits는 그러한 "접근 방법" 이라고 보면 된다.          |
         -----------------------------------------------------------
 
-        typename ft::iterator_traits<Iter>::value_type temp = *begin;
+        ? 근데 아래 처럼 직접 호출하는것도 되는데, 왜 굳이 iterator_traits를 쓰나요?
+
+        ! 문제는 Iter가 pointer일 때이다.
+        ! pointer가 들어오면, value_type은 정의되어 있지 않다.
+        typename Iter::value_type temp1 = *begin;
+
+        * 반면 iterator_traits는 포인터 특수화가 되어 있다.
+        * 따라서 포인터에 대한 traits 정보도 제공된다.
+        typename ft::iterator_traits<Iter>::value_type temp2 = *begin;
         for (; begin != end; ++begin) {
             ... do something ...
         }
+        ... works for pointer type
     }
 
     c++11 이후에 생긴 allocator_traits도 같은 목적이다.
@@ -75,6 +89,7 @@ struct iterator_traits<T*> // Specializtion if T is pointer
 };
 
 // Specializations (2) on <const T*>
+// * const T* 특수화를 해야 value_type에서 const값을 뺀 순수 T를 얻어낼 수 있다.
 template<class T>
 struct iterator_traits<const T*> // Specialization if T is const pointer
 {
@@ -130,7 +145,6 @@ public: // constructor & destructor
     {
         return m_Current;
     }
-
 
     // constructor
     random_access_iterator()

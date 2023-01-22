@@ -12,6 +12,16 @@
 //   |                                                            |
 //   --------------------------------------------------------------
 
+// for printing color ascii...
+#define PRINT_RED     "\x1b[31m"
+#define PRINT_GREEN   "\x1b[32m"
+#define PRINT_YELLOW  "\x1b[33m"
+#define PRINT_BLUE    "\x1b[34m"
+#define PRINT_MAGENTA "\x1b[35m"
+#define PRINT_CYAN    "\x1b[36m"
+#define PRINT_RESET   "\x1b[0m"
+
+
 
 // --------------------------------------------------------------------------------------------
 // * for Debug mode - assert enable.
@@ -23,11 +33,6 @@
 #ifndef FT_DEBUG_MODE
       #define NDEBUG
 #endif
-
-
-
-
-
 
 
 // ---------------------------------------------------------------------------------------------
