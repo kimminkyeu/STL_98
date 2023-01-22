@@ -5,13 +5,6 @@
 #ifndef FT_CONTAINER_CONFIG_HPP
 #define FT_CONTAINER_CONFIG_HPP
 
-//   --------------------------------------------------------------
-//   |  llvm __config 파일 내용을 참고하여 작성하였습니다.                 |
-//   |                                                            |
-//*  |  https://libcxx.llvm.org/DesignDocs/VisibilityMacros.html  |
-//   |                                                            |
-//   --------------------------------------------------------------
-
 // for printing color ascii...
 #define PRINT_RED     "\x1b[31m"
 #define PRINT_GREEN   "\x1b[32m"
@@ -21,18 +14,12 @@
 #define PRINT_CYAN    "\x1b[36m"
 #define PRINT_RESET   "\x1b[0m"
 
-
-
-// --------------------------------------------------------------------------------------------
-// * for Debug mode - assert enable.
-
-#define FT_DEBUG_MODE
-
-#include <cassert> // for assert
-// https://cplusplus.com/reference/cassert/assert/
-#ifndef FT_DEBUG_MODE
-      #define NDEBUG
-#endif
+//   --------------------------------------------------------------
+//   |  하단의 내용은 llvm __config 파일 내용을 참고하여 작성하였습니다.     |
+//   |                                                            |
+// * |  https://libcxx.llvm.org/DesignDocs/VisibilityMacros.html  |
+//   |                                                            |
+//   --------------------------------------------------------------
 
 
 // ---------------------------------------------------------------------------------------------
