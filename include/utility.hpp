@@ -107,6 +107,31 @@ struct pair
     {}
 };
 
+// * map의 경우 pair<const K, V>를 사용하기 때문에,
+// * K를 복사하지 못한다. 따라서 이 경우에 한해 복사를 어떻게 할지 알려줘야 한다.
+// * 그래서 아래와 같이 map에 대해 특수 경우를 따로 작성하였다.
+template <class T1, class T2>
+struct pair<const T1, T2>
+{
+    typedef pair<const T1, T2>  pair_type;
+
+    typedef T1  first_type;
+    typedef T2  second_type;
+
+    const T1  first;
+    T2  second;
+
+    pair(const T1& _t1, const T2& _t2)
+        : first(_t1), second(_t2)
+    {}
+
+    pair_type& operator=(const pair_type& other)
+    {
+        this->second = other.second; // second 만 복사 진행.
+        return (*this);
+    }
+};
+
 // * (5) std::make_pair : [ Defined in header <utility> ]
 // https://en.cppreference.com/w/cpp/utility/pair/make_pair
 template <class T1, class T2>
