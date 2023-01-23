@@ -115,19 +115,14 @@ struct iterator_traits<const T*> // Specialization if T is const pointer
 // The _Container parameter exists solely so that different containers using this template
 // can instantiate different types, even if the _Iterator parameter is the same.
 template<typename Iterator, typename Container>
-class random_access_iterator
-: public std::iterator<typename FT::iterator_traits<Iterator>::iterator_category,
-                       typename FT::iterator_traits<Iterator>::value_type,
-                       typename FT::iterator_traits<Iterator>::difference_type,
-                       typename FT::iterator_traits<Iterator>::pointer,
-                       typename FT::iterator_traits<Iterator>::reference>
+class FT_TEMPLATE_VIS random_access_iterator
 {
 protected:
   Iterator m_Current;
 
 public:
     typedef typename FT::iterator_traits<Iterator>      Traits;
-    typedef typename Traits::iterator_category          iterator_category;
+    typedef typename std::random_access_iterator_tag    iterator_category;
     typedef typename Traits::value_type                 value_type;
     typedef typename Traits::difference_type            difference_type;
     typedef typename Traits::pointer                    pointer;
