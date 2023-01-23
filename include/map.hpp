@@ -32,10 +32,10 @@ public:
     // Member types:
     typedef Key                                         key_type;         // 각 map 요소에 저장된 정렬 키에 대한 typedef
     typedef Value                                       mapped_type;      // 각 map 요소에 저장된 데이터에 대한 typedef
-    typedef pair<const key_type, mapped_type>           value_type;       // map의 요소로 저장된 개체의 형식에 대한 typedef
-
     typedef Compare                                     key_compare;      // map의 두 요소간 상대적 순서를 결정하는 두 정렬 키를 비교할 수 있는 함수 개체에 대한 typedef
     typedef Allocator                                   allocator_type;   // map 개체를 위한 allocator 클래스의 typedef
+
+    typedef pair<const key_type, mapped_type>           value_type;       // map의 요소로 저장된 개체의 형식에 대한 typedef
     typedef value_type&                                 reference;        // map에 저장된 요소에 대한 참조의 typedef
     typedef const value_type&                           const_reference;  // 읽기 및 const 작업을 수행하기 위해 const 맵에 저장된 요소에 대한 참조에 대한 typedef
 
@@ -64,7 +64,9 @@ public:
     };
 
 private:
+    // * 여기서 pair type 정렬을 위한 value_compare를 넣어준다.
     typedef _PRIVATE::LeftLeaningRedBlack<value_type, value_compare>        _map_base;
+    typedef FT::map<Key, Value, Compare, Allocator>     map_type;
 
 public:
     typedef typename _map_base::iterator                                    iterator;
@@ -87,20 +89,40 @@ public: // constructor & destructor.
 
 
     template <class InputIterator>
-    map(InputIterator first, InputIterator last, const key_compare& comp = key_compare());
+    map(InputIterator first, InputIterator last, const key_compare& comp = key_compare())
+        : __tree__(comp)
+    {
+        insert(first, last);
+    }
 
     template <class InputIterator>
-    map(InputIterator first, InputIterator last, const key_compare& comp, const allocator_type& a);
+    map(InputIterator first, InputIterator last, const key_compare& comp, const allocator_type& a)
+        : __tree__(comp, a)
+    {
+        insert(first, last);
+    }
 
-    map(const map& m);
+    map(const map_type& m)
+        : __tree__(m.__tree__)
+    {}
 
-    explicit map(const allocator_type& a);
+    explicit map(const allocator_type& a)
+        : __tree__(a)
+    {}
 
-    map(const map& m, const allocator_type& a);
+    map(const map_type& m, const allocator_type& a)
+        : __tree__(m.__tree__, a)
+    {}
 
-   ~map();
+   ~map()
+   {
+        // ...
+   }
 
-    map& operator=(const map& m);
+    map& operator=(const map_type& m)
+    {
+        __tree__ = m.__tree__;
+    }
 
     allocator_type get_allocator() const;
 
@@ -134,7 +156,12 @@ public:
     iterator insert(const_iterator position, const value_type& v);
 
     template <class InputIterator>
-    void insert(InputIterator first, InputIterator last);
+    void insert(InputIterator first, InputIterator last,
+        typename FT::enable_if<!(FT::is_integral<InputIterator>::value)>::type * = 0)
+    {
+
+    }
+
 
     void clear();
 

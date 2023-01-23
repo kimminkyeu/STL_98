@@ -9,7 +9,7 @@ add_link_options(-Wall -Wextra -Wall -g3 -fsanitize=address)
 
 
 set(TEST_SRC_FILES
-        test/main.cpp include/map.hpp include/set.hpp)
+        test/main.cpp)
 
 #set(TEST_SRC_FILES
 #        test/left_leaning_red_black_test.cpp)

@@ -45,6 +45,16 @@ int		main()
     }
 
     std::cout << "\n--------------------\n";
+    std::cout << "Testing copy... \n";
+    std::cout << "         copied tree: \n";
+    std::cout << "--------------------\n";
+    TEST::LeftLeaningRedBlack<int> other(test.begin(), test.end());
+    TEST::printTree(test);
+
+
+
+
+    std::cout << "\n--------------------\n";
     std::cout << "Testing erase... \n";
     std::cout << "--------------------\n";
 

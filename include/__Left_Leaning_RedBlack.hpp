@@ -61,6 +61,10 @@ public: // constructor & destructor
             : m_Current(_iterator_in)
     {}
 
+    explicit __tree_iterator(const pointer& _pointer_in) // Node pointer to iterator casting.
+        : m_Current(_pointer_in)
+    {}
+
     // copy constructor (used at casting)
     template<typename _Other_Key>
     explicit __tree_iterator(const __tree_iterator<_Other_Key, _NodeType>& _other_iterator)
@@ -472,6 +476,7 @@ public: // typedefs
     typedef RedBlackNode<_KeyType, _Compare>                            node_type;
     typedef _KeyType                                                    key_type;
     typedef _Compare                                                    value_compare_type;
+    typedef _Allocator                                                  allocator_type;
     typedef node_type*                                                  node_pointer; // equivalant to node_pointer*
     typedef LeftLeaningRedBlack<key_type, _Compare, _Allocator>         tree_type;
     typedef __tree_iterator<key_type, node_type>                        iterator;
@@ -489,20 +494,51 @@ private: // private data member
 
 public: // constructor, destructor
 
-    LeftLeaningRedBlack()
-        // Initializes an empty symbol table.
-        : m_Root(NULL), m_Value_compare(value_compare_type())
-        {}
-
-    LeftLeaningRedBlack(const value_compare_type& comp, const _Allocator& alloc)
-        : _node_alloc_base(alloc) , m_Root(NULL), m_Value_compare(comp)
+    // Initializes an empty symbol table.
+    LeftLeaningRedBlack(const value_compare_type& comp = value_compare_type(), const _Allocator& alloc = allocator_type())
+        : _node_alloc_base(alloc), m_Root(NULL), m_Value_compare(comp)
     {}
+
+    LeftLeaningRedBlack(const tree_type& other_tree)
+        : m_Root(other_tree.m_Root), m_Value_compare(other_tree.m_Value_compare)
+    {}
+
+    explicit LeftLeaningRedBlack(const allocator_type& a)
+        : _node_alloc_base(a), m_Root(NULL), m_Value_compare(value_compare_type())
+    {}
+
+    LeftLeaningRedBlack(const tree_type& other_tree, const allocator_type& a)
+        : _node_alloc_base(a), m_Root(other_tree.m_Root), m_Value_compare(other_tree.m_Value_compare)
+    {}
+
+    template <class InputIterator>
+    LeftLeaningRedBlack(InputIterator first, InputIterator last, const value_compare_type& comp = key_compare())
+        : m_Root(NULL), m_Value_compare(comp)
+    {
+        put(first, last);
+    }
+
+    template <class InputIterator>
+    LeftLeaningRedBlack(InputIterator first, InputIterator last, const value_compare_type& comp, const allocator_type& a)
+        : _node_alloc_base(a), m_Root(NULL), m_Value_compare(comp)
+    {
+        put(first, last);
+    }
 
     ~LeftLeaningRedBlack()
     {
         // delete tree every data.
         clear();
         m_Root = NULL;
+    }
+
+    // contents 깊은 복사해야지 포인터를 다룰게 아니다.
+    tree_type& operator=(const tree_type& other_tree)
+    {
+        // insert(other_tree.begin(), other_tree.end())
+        // TODO: copy contents ...
+
+        m_Value_compare = other_tree.m_Value_compare;
     }
 
 
@@ -552,14 +588,15 @@ public:
          return (begin()->key);
     }
 
-    node_pointer begin()
+    iterator begin()
     {
         if (isEmpty()) throw std::runtime_error("calls min() with empty symbol table");
         node_pointer t = __min(m_Root);
-        return t;
+        return iterator(t);
     }
 
-    node_pointer end() { return NULL; }
+    iterator end()
+    { return iterator(NULL); }
 
     // return true is tree is empty
     bool isEmpty()
@@ -601,6 +638,17 @@ public:
 public:
 
     // insert unique data to red black tree.
+    template <class InputIterator>
+    void put(InputIterator start, InputIterator end)
+    {
+        while (start != end)
+        {
+            put(*start);
+            ++start;
+        }
+    }
+
+
     void put(const key_type& key)
     {
         m_Root = __put(m_Root, key);
