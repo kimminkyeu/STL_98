@@ -414,7 +414,7 @@ public:
 
     const_reference at(size_type n) const // may throw exception
     {
-       if (n > this->size()) {
+        if (n > this->size()) {
             throw std::out_of_range("vector");
         }
         return this->operator[](n);

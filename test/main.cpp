@@ -10,7 +10,7 @@
 
 // #include <stack> // temp for print function
 //#include "__Left_Leaning_RedBlack.hpp"
-// #include <map>
+ #include <map>
 // #include <functional>
 #include "map.hpp"
 
@@ -22,6 +22,12 @@ int		main()
 {
     FT::map<int, int> m;
     FT::map<int, int>::iterator itr = m.begin();
+    m.max_size();
+    m[3] = 5;
+    m.at(3) = 4;
+
+    FT::map<std::string, std::string> dict;
+
 
 
 
