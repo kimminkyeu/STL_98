@@ -20,14 +20,6 @@ FT_BEGIN_PRIVATE_NAMESPACE
 
 
 
-
-
-
-
-
-
-
-
 // ---------------------------------------------------------------
 // |                                                             |
 // |             Binary Tree iterator implementation             |
@@ -48,6 +40,7 @@ public:
     typedef typename _Iter_base::difference_type              difference_type;     // ptrdiff_t
     typedef typename _Iter_base::pointer                      pointer;             // (NodeType *)
     typedef typename _Iter_base::reference                    reference;           // (NodeType &)
+
 
 protected: // data member
 // * --------------------------------------------------------------------
@@ -82,11 +75,11 @@ public: // operator
 //        return __map_iterator<const value_type*, Container>(this->m_Current);
 //    }
 
-    reference operator*() const // this returns node_type&
-    { return (*m_Current); }
+    reference operator*() const // this returns node's Key.
+    { return (m_Current->key); }
 
-    pointer operator->() const // this makes [ Iter->... ] equal to [ NodePtr->... ]
-    { return m_Current; }
+    pointer operator->() const // this makes [ Iter->... ] equal to [ Key ->... ]
+    { return &(m_Current->key); }
 
      template<typename _Other_Key>
     _iterator_type& operator=(const __tree_iterator<_Other_Key, _NodeType>& _other_iterator)
@@ -137,6 +130,115 @@ bool operator!=(const __tree_iterator<_IteratorL, _NodeType>& __lhs,
 
 
 
+// ---------------------------------------------------------------
+// |                                                             |
+// |         Binary Tree const iterator implementation           |
+// |                                                             |
+// ---------------------------------------------------------------
+template <typename _Key, typename _NodeType>
+class FT_TEMPLATE_VIS __tree_const_iterator
+ : public std::iterator< std::bidirectional_iterator_tag, _NodeType >
+{
+private: // typedef from class Left_Leaning_Red_Black
+    typedef std::iterator< std::bidirectional_iterator_tag, _NodeType >		_Iter_base;
+    typedef __tree_iterator<_Key, _NodeType>                                _iterator_type;
+
+public:
+    typedef typename _Iter_base::iterator_category            iterator_category;   // bidirectional tag
+    typedef typename _Iter_base::value_type           		  value_type; 		   // (NodeType)
+    typedef typename _Iter_base::difference_type              difference_type;     // ptrdiff_t
+    typedef typename _Iter_base::pointer                      pointer;             // (NodeType *)
+    typedef typename _Iter_base::reference                    reference;           // (NodeType &)
+
+protected: // data member
+// * --------------------------------------------------------------------
+    pointer m_Current; // pointer to a single node.
+// * --------------------------------------------------------------------
+
+public: // constructor & destructor
+
+    pointer base() const
+    { return m_Current; }
+
+    __tree_const_iterator()
+            : m_Current()
+    {}
+
+    // constructor Wrapping
+    explicit __tree_const_iterator(const __tree_const_iterator& _const_iterator_in)
+            : m_Current(_const_iterator_in)
+    {}
+
+    explicit __tree_const_iterator(const __tree_iterator<_Key, _NodeType>& _iterator_in)
+            : m_Current(_iterator_in)
+    {}
+
+    // copy constructor (used at casting)
+    template<typename _Other_Key>
+    explicit __tree_const_iterator(const __tree_const_iterator<_Other_Key, _NodeType>& _other_iterator)
+            : m_Current(_other_iterator.base()) // wrapper가 감싸고 있는 부분을 깊은 복사하는 것.
+    {}
+
+public: // operator
+
+//. Because of explicit keyword on constructor, i added const_iterator cast operator. ( Type-casting [T*] to [const T*] )
+//    operator __map_iterator<const value_type*, Container>()
+//    {
+//        return __map_iterator<const value_type*, Container>(this->m_Current);
+//    }
+
+    reference operator*() const // this returns node's Key.
+    { return (m_Current->key); }
+
+    pointer operator->() const // this makes [ Iter->... ] equal to [ Key ->... ]
+    { return &(m_Current->key); }
+
+     template<typename _Other_Key>
+    _iterator_type& operator=(const __tree_const_iterator<_Other_Key, _NodeType>& _other_iterator)
+    {
+        m_Current = _other_iterator.base();
+        return (*this);
+    }
+
+    _iterator_type operator++(int) // same as iter++;
+    {
+        pointer tmp = m_Current;
+        m_Current = m_Current->getSuccessor();
+        return __tree_const_iterator(tmp);
+    }
+
+    _iterator_type& operator++() // same as ++iter;
+    {
+        m_Current = m_Current->getSuccessor();
+        return *this;
+    }
+
+    _iterator_type operator--(int)
+    {
+        pointer tmp = m_Current;
+        m_Current = m_Current->getPredecessor();
+        return __tree_const_iterator(tmp);
+    }
+
+    _iterator_type& operator--()
+    {
+        m_Current = m_Current->getPredecessor();
+        return *this;
+    }
+};
+
+// @ forward iterator requirements.
+// left-hand-side / right_hand_side
+
+template<typename _IteratorL, typename _IteratorR, typename _NodeType>
+bool operator==(const __tree_const_iterator<_IteratorL, _NodeType>& __lhs,
+                const __tree_const_iterator<_IteratorR, _NodeType>& __rhs)
+{ return __lhs.base() == __rhs.base(); }
+
+template<typename _IteratorL, typename _IteratorR, typename _NodeType>
+bool operator!=(const __tree_const_iterator<_IteratorL, _NodeType>& __lhs,
+                const __tree_const_iterator<_IteratorR, _NodeType>& __rhs)
+{ return !(__lhs == __rhs); }
 
 
 
@@ -177,9 +279,9 @@ protected: // typedef and namespace scope
 
 
 protected:
-    // ------------------------------
+    // * ------------------------------------------------------
     node_allocator_type __m_Data_allocator;
-    // ------------------------------
+    // * ------------------------------------------------------
 
     FT_HIDE_FROM_ABI // allocate single node. same as ::new node();
     pointer __allocate_single_node()
@@ -213,8 +315,8 @@ protected:
         : __m_Data_allocator(node_allocator_type())
     {}
 
-    explicit Tree_node_alloc_base(const node_allocator_type& _a)
-            : __m_Data_allocator(_a)
+    explicit Tree_node_alloc_base(const Allocator& _a)
+            : __m_Data_allocator(node_allocator_type(_a)) // _a를 받아서, node_allocator_type으로 바꿈.
     {}
 };
 
@@ -298,6 +400,11 @@ struct RedBlackNode
     }
 
     // if Predecessor doesn't exist, then return NULL.
+     /**
+     * @param first hello
+     * @return something
+     * @exception warn!
+     */
     node_pointer getPredecessor()
     {
         // Case 1.
@@ -356,7 +463,7 @@ struct RedBlackNode
 
 // if Map, KeyType will be ft::pair<A, B>.  if Set, KeyType will be A.
 template <class _KeyType, class _Compare = std::less<_KeyType>, class _Allocator = std::allocator<_KeyType> >
-class LeftLeaningRedBlack : protected Tree_node_alloc_base<_KeyType,
+class LeftLeaningRedBlack : protected Tree_node_alloc_base<_KeyType, // * Rebind는 alloc_base에서 담당.
                                                            RedBlackNode<_KeyType, _Compare>,
                                                            _Allocator>
 {
@@ -367,6 +474,11 @@ public: // typedefs
     typedef _Compare                                                    value_compare_type;
     typedef node_type*                                                  node_pointer; // equivalant to node_pointer*
     typedef LeftLeaningRedBlack<key_type, _Compare, _Allocator>         tree_type;
+    typedef __tree_iterator<key_type, node_type>                        iterator;
+    typedef __tree_const_iterator<key_type, node_type>                  const_iterator;
+
+private:
+    typedef Tree_node_alloc_base<key_type, node_type, _Allocator>       _node_alloc_base;
 
 private: // private data member
 // *-----------------------------------------------------------------------------
@@ -374,12 +486,17 @@ private: // private data member
     _Compare        m_Value_compare;    // default compare function class.
 // *-----------------------------------------------------------------------------
 
+
 public: // constructor, destructor
 
     LeftLeaningRedBlack()
         // Initializes an empty symbol table.
         : m_Root(NULL), m_Value_compare(value_compare_type())
         {}
+
+    LeftLeaningRedBlack(const value_compare_type& comp, const _Allocator& alloc)
+        : _node_alloc_base(alloc) , m_Root(NULL), m_Value_compare(comp)
+    {}
 
     ~LeftLeaningRedBlack()
     {
@@ -711,7 +828,13 @@ private:
     //      * Red Black tree elementary operations
     // ------------------------------------------------------------
 
+
     // flip the colors of a node and its two children
+     /**
+     * @param first hello
+     * @return something
+     * @exception warn!
+     */
     void __flipColors(node_pointer h)
     {
         h->color = !h->color;
@@ -943,12 +1066,6 @@ void printTree(const LeftLeaningRedBlack<KeyType> &tree)
     std::cout << "--------------------------------------\n";
     std::cout << "\n";
 }
-
-
-
-
-
-
 
 
  FT_END_PRIVATE_NAMESPACE
