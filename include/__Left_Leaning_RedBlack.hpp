@@ -18,6 +18,137 @@
 
 FT_BEGIN_PRIVATE_NAMESPACE
 
+
+
+
+
+
+
+
+
+
+
+// ---------------------------------------------------------------
+// |                                                             |
+// |             Binary Tree iterator implementation             |
+// |                                                             |
+// ---------------------------------------------------------------
+
+template <typename _Key, typename _NodeType>
+class FT_TEMPLATE_VIS __tree_iterator
+ : public std::iterator< std::bidirectional_iterator_tag, _NodeType >
+{
+private: // typedef from class Left_Leaning_Red_Black
+    typedef std::iterator< std::bidirectional_iterator_tag, _NodeType >		_Iter_base;
+    typedef __tree_iterator<_Key, _NodeType>                                _iterator_type;
+
+public:
+    typedef typename _Iter_base::iterator_category            iterator_category;   // bidirectional tag
+    typedef typename _Iter_base::value_type           		  value_type; 		   // (NodeType)
+    typedef typename _Iter_base::difference_type              difference_type;     // ptrdiff_t
+    typedef typename _Iter_base::pointer                      pointer;             // (NodeType *)
+    typedef typename _Iter_base::reference                    reference;           // (NodeType &)
+
+protected: // data member
+// * --------------------------------------------------------------------
+    pointer m_Current; // pointer to a single node.
+// * --------------------------------------------------------------------
+
+public: // constructor & destructor
+
+    pointer base() const
+    { return m_Current; }
+
+    __tree_iterator()
+            : m_Current()
+    {}
+
+    // constructor Wrapping
+    explicit __tree_iterator(const __tree_iterator& _iterator_in)
+            : m_Current(_iterator_in)
+    {}
+
+    // copy constructor (used at casting)
+    template<typename _Other_Key>
+    explicit __tree_iterator(const __tree_iterator<_Other_Key, _NodeType>& _other_iterator)
+            : m_Current(_other_iterator.base()) // wrapper가 감싸고 있는 부분을 깊은 복사하는 것.
+    {}
+
+public: // operator
+
+//. Because of explicit keyword on constructor, i added const_iterator cast operator. ( Type-casting [T*] to [const T*] )
+//    operator __map_iterator<const value_type*, Container>()
+//    {
+//        return __map_iterator<const value_type*, Container>(this->m_Current);
+//    }
+
+    reference operator*() const // this returns node_type&
+    { return (*m_Current); }
+
+    pointer operator->() const // this makes [ Iter->... ] equal to [ NodePtr->... ]
+    { return m_Current; }
+
+     template<typename _Other_Key>
+    _iterator_type& operator=(const __tree_iterator<_Other_Key, _NodeType>& _other_iterator)
+    {
+        m_Current = _other_iterator.base();
+        return (*this);
+    }
+
+    _iterator_type operator++(int) // same as iter++;
+    {
+        pointer tmp = m_Current;
+        m_Current = m_Current->getSuccessor();
+        return __tree_iterator(tmp);
+    }
+
+    _iterator_type& operator++() // same as ++iter;
+    {
+        m_Current = m_Current->getSuccessor();
+        return *this;
+    }
+
+    _iterator_type operator--(int)
+    {
+        pointer tmp = m_Current;
+        m_Current = m_Current->getPredecessor();
+        return __tree_iterator(tmp);
+    }
+
+    _iterator_type& operator--()
+    {
+        m_Current = m_Current->getPredecessor();
+        return *this;
+    }
+};
+
+// @ forward iterator requirements.
+// left-hand-side / right_hand_side
+
+template<typename _IteratorL, typename _IteratorR, typename _NodeType>
+bool operator==(const __tree_iterator<_IteratorL, _NodeType>& __lhs,
+                const __tree_iterator<_IteratorR, _NodeType>& __rhs)
+{ return __lhs.base() == __rhs.base(); }
+
+template<typename _IteratorL, typename _IteratorR, typename _NodeType>
+bool operator!=(const __tree_iterator<_IteratorL, _NodeType>& __lhs,
+                const __tree_iterator<_IteratorR, _NodeType>& __rhs)
+{ return !(__lhs == __rhs); }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // ---------------------------------------------------------------
 // |                                                             |
 // |             Tree_node_alloc_base implementation             |
@@ -25,17 +156,7 @@ FT_BEGIN_PRIVATE_NAMESPACE
 // ---------------------------------------------------------------
 // wrapper class to handle all the node allocating, rebind, etc...
 // 주어진 T를 각 tree에 맞는 node로 묶어서 하나의 단위로 allocate.
-// ! -> RB-tree에선 RB-Node를 연결해주면 된다.
 
-/*  allocator에 있는 rebind 구조체.
-template<class Other>
-struct rebind {
-    typedef allocator<Other> other;
-};
-*/
-
-
-// if it is map, T would be std::pair<Key, Value>
 template <class T, class _NodeType, class Allocator>
 class Tree_node_alloc_base
 {
@@ -95,17 +216,27 @@ protected:
     explicit Tree_node_alloc_base(const node_allocator_type& _a)
             : __m_Data_allocator(_a)
     {}
-
-    // * *************************************************************************
-    // TODO: alloc_base의 소멸자에서 Tree를 후위순회하면서 노드들을 전부 제거해주는게 맞지 않을까?
-    // * *************************************************************************
-
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 // --------------------------------------------------------------------------
 // |                                                                        |
-// |          Left Leaning Red Black tree's Node implementation             |
+// |          Red Black tree Node implementation                            |
 // |                                                                        |
 // --------------------------------------------------------------------------
 
@@ -191,27 +322,18 @@ struct RedBlackNode
 };
 
 
-// TODO:   change this compare class to map_compare.
-template <class Key, class Value, class Compare = std::less<Key> >
-class map_value_compare
-{
-public:
-    typedef ft::pair<Key, Value> value_type;
 
-protected:
-    Compare comp;
 
-    map_value_compare(Compare c)
-        : comp(c)
-    {}
 
-public:
 
-    bool operator()(const value_type &x, const value_type &y) const
-    {
-        return (comp(x.first, y.first));
-    }
-};
+
+
+
+
+
+
+
+
 
 // ---------------------------------------------------------------
 // |                                                             |
@@ -229,24 +351,10 @@ public:
 // *Ref 4: [ C++ source lecture on LLRB ]
 //        http://www.teachsolaisgames.com/articles/balanced_left_leaning.html
 
-/*
-// Forward Declaration for template friend function
-template <class _KeyType, class _Compare, class _Allocator>
-class LeftLeaningRedBlack;
-
-// Forward Declaration for template friend function
-template <typename T>
-void printTree(const T& t);
-*/
 
 
-// TODO: use this as RB_base later. // -> add to map / set
-// Set and Map must set each template parameter accordingly.
 
-// ? if Map, KeyType will be ft::pair<A, B>.
-// ? if Set, KeyType will be A.
-
-// TODO: 아래 기본 값은 나중에 Map Set에서 해주고, 여긴 테스트용으로만 남겨주자.
+// if Map, KeyType will be ft::pair<A, B>.  if Set, KeyType will be A.
 template <class _KeyType, class _Compare = std::less<_KeyType>, class _Allocator = std::allocator<_KeyType> >
 class LeftLeaningRedBlack : protected Tree_node_alloc_base<_KeyType,
                                                            RedBlackNode<_KeyType, _Compare>,
@@ -261,16 +369,15 @@ public: // typedefs
     typedef LeftLeaningRedBlack<key_type, _Compare, _Allocator>         tree_type;
 
 private: // private data member
-// *----------------------------------------------
+// *-----------------------------------------------------------------------------
     node_pointer    m_Root;
-    _Compare        m_Value_compare; // default compare function class.
-
-    // ! 어떻게 하면 set 과 map에 일관된 compare 함수를 연결할 수 있지?
-// *----------------------------------------------
+    _Compare        m_Value_compare;    // default compare function class.
+// *-----------------------------------------------------------------------------
 
 public: // constructor, destructor
-    // Initializes an empty symbol table.
+
     LeftLeaningRedBlack()
+        // Initializes an empty symbol table.
         : m_Root(NULL), m_Value_compare(value_compare_type())
         {}
 
@@ -317,13 +424,6 @@ private:
         if (x == NULL) return false; // null node is black.
         return (x->color == RED);
     }
-
-    // number of node in subtree rooted at x; 0 if x is null
-//    size_t __size(node_pointer x)
-//    {
-//        if (x == NULL) return 0;
-//        return (x->size);
-//    }
 
 // ------------------------------------------------------------
 //       Standard BST search
@@ -405,11 +505,11 @@ private:
 
         if      (cmp < 0)   {
             curr->left  = __put(curr->left, target_key);
-            curr->left->parent = curr; // ! Really needed?
+            curr->left->parent = curr;
         }
         else if (cmp > 0)   {
             curr->right = __put(curr->right, target_key);
-            curr->right->parent = curr; // ! Really needed?
+            curr->right->parent = curr;
         }
         else                {
             curr->key   = target_key;
@@ -450,10 +550,8 @@ private:
 
     // ------------------------------------------------------------
     //       Red Black tree deletion
-    //
     // ------------------------------------------------------------
-    // delete은 코드가 좀 어렵다.
-    // * http://www.teachsolaisgames.com/articles/balanced_left_leaning.html
+    // http://www.teachsolaisgames.com/articles/balanced_left_leaning.html
     // 여기를 보면서 상세한 내용을 이해하는게 좋겠다.
 
 public:
@@ -755,15 +853,23 @@ private:
 
 };
 
+
+
+
+
+
+
+
+
+
+
+
+
 template <typename KeyType>
 void _printWithColor(const KeyType& data, const std::string& color = PRINT_RESET)
 {
     std::cout << " " << color << data << PRINT_RESET << std::endl;
 }
-
-
-
-
 
 // TODO:  Remove this functions later!!
 struct Trunk
@@ -838,7 +944,13 @@ void printTree(const LeftLeaningRedBlack<KeyType> &tree)
     std::cout << "\n";
 }
 
+
+
+
+
+
+
+
  FT_END_PRIVATE_NAMESPACE
-// FT_END_GLOBAL_NAMESPACE
 
 #endif //FT_CONTAINER___LEFT_LEANING_REDBLACK_HPP

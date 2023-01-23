@@ -116,6 +116,11 @@ struct iterator_traits<const T*> // Specialization if T is const pointer
 // can instantiate different types, even if the _Iterator parameter is the same.
 template<typename Iterator, typename Container>
 class FT_TEMPLATE_VIS random_access_iterator
+    : public std::iterator< std::random_access_iterator_tag,
+                            typename FT::iterator_traits<Iterator>::value_type,
+                            typename FT::iterator_traits<Iterator>::difference_type,
+                            typename FT::iterator_traits<Iterator>::pointer,
+                            typename FT::iterator_traits<Iterator>::reference >
 {
 protected:
   Iterator m_Current;
@@ -180,11 +185,11 @@ public: // operator
         return (*this);
     }
 
-    random_access_iterator_type operator++(int)
+    random_access_iterator_type operator++(int) // same as iter++;
     { return random_access_iterator(m_Current++); }
 
 
-    random_access_iterator_type& operator++()
+    random_access_iterator_type& operator++() // same as ++iter;
     { ++m_Current; return *this; }
 
 
@@ -285,6 +290,13 @@ operator-(const ft::random_access_iterator<T_L, _Container> lhs,
 {
     return (lhs.base() - rhs.base());
 }
+
+
+
+
+
+
+
 
 
 // ---------------------------------------------------------------
