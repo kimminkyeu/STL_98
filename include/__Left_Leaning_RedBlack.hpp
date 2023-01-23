@@ -36,10 +36,12 @@ private: // typedef from class Left_Leaning_Red_Black
 
 public:
     typedef typename _Iter_base::iterator_category            iterator_category;   // bidirectional tag
-    typedef typename _Iter_base::value_type           		  value_type; 		   // (NodeType)
+    typedef typename _Iter_base::value_type           		  node_type; 		   // (NodeType)
     typedef typename _Iter_base::difference_type              difference_type;     // ptrdiff_t
-    typedef typename _Iter_base::pointer                      pointer;             // (NodeType *)
-    typedef typename _Iter_base::reference                    reference;           // (NodeType &)
+//    typedef typename _Iter_base::pointer                      pointer;             // (NodeType *)
+    typedef _NodeType*                                        pointer;
+    typedef _NodeType&                                        reference;
+//    typedef typename _Iter_base::reference                    reference;           // (NodeType &)
 
 
 protected: // data member
@@ -57,33 +59,36 @@ public: // constructor & destructor
     {}
 
     // constructor Wrapping
-    explicit __tree_iterator(const __tree_iterator& _iterator_in)
-            : m_Current(_iterator_in)
+    __tree_iterator(const __tree_iterator& _iterator_in)
+            : m_Current(_iterator_in.base())
     {}
 
-    explicit __tree_iterator(const pointer& _pointer_in) // Node pointer to iterator casting.
+    __tree_iterator(const pointer& _pointer_in) // Node pointer to iterator casting.
         : m_Current(_pointer_in)
     {}
 
     // copy constructor (used at casting)
     template<typename _Other_Key>
-    explicit __tree_iterator(const __tree_iterator<_Other_Key, _NodeType>& _other_iterator)
+    __tree_iterator(const __tree_iterator<_Other_Key, _NodeType>& _other_iterator)
             : m_Current(_other_iterator.base()) // wrapper가 감싸고 있는 부분을 깊은 복사하는 것.
     {}
 
 public: // operator
 
 //. Because of explicit keyword on constructor, i added const_iterator cast operator. ( Type-casting [T*] to [const T*] )
-//    operator __map_iterator<const value_type*, Container>()
+//    operator __tree_iterator<value_type, _NodeType>()
 //    {
 //        return __map_iterator<const value_type*, Container>(this->m_Current);
 //    }
 
+    // m_Current is node_pointer
     reference operator*() const // this returns node's Key.
-    { return (m_Current->key); }
+    { return (*m_Current); }
+//    { return (m_Current->key); }
 
     pointer operator->() const // this makes [ Iter->... ] equal to [ Key ->... ]
-    { return &(m_Current->key); }
+    { return (m_Current); }
+//    { return &(m_Current->key); }
 
      template<typename _Other_Key>
     _iterator_type& operator=(const __tree_iterator<_Other_Key, _NodeType>& _other_iterator)
@@ -134,6 +139,7 @@ bool operator!=(const __tree_iterator<_IteratorL, _NodeType>& __lhs,
 
 
 
+
 // ---------------------------------------------------------------
 // |                                                             |
 // |         Binary Tree const iterator implementation           |
@@ -145,13 +151,14 @@ class FT_TEMPLATE_VIS __tree_const_iterator
 {
 private: // typedef from class Left_Leaning_Red_Black
     typedef std::iterator< std::bidirectional_iterator_tag, _NodeType >		_Iter_base;
-    typedef __tree_iterator<_Key, _NodeType>                                _iterator_type;
+    typedef __tree_const_iterator<_Key, _NodeType>                          _const_iterator_type;
+
 
 public:
     typedef typename _Iter_base::iterator_category            iterator_category;   // bidirectional tag
     typedef typename _Iter_base::value_type           		  value_type; 		   // (NodeType)
     typedef typename _Iter_base::difference_type              difference_type;     // ptrdiff_t
-    typedef typename _Iter_base::pointer                      pointer;             // (NodeType *)
+    typedef typename _Iter_base::const_pointer                pointer;             // (NodeType *)
     typedef typename _Iter_base::reference                    reference;           // (NodeType &)
 
 protected: // data member
@@ -169,7 +176,7 @@ public: // constructor & destructor
     {}
 
     // constructor Wrapping
-    explicit __tree_const_iterator(const __tree_const_iterator& _const_iterator_in)
+    __tree_const_iterator(const __tree_const_iterator& _const_iterator_in)
             : m_Current(_const_iterator_in)
     {}
 
@@ -192,39 +199,39 @@ public: // operator
 //    }
 
     reference operator*() const // this returns node's Key.
-    { return (m_Current->key); }
+    { return (*m_Current); }
 
     pointer operator->() const // this makes [ Iter->... ] equal to [ Key ->... ]
-    { return &(m_Current->key); }
+    { return (m_Current); }
 
      template<typename _Other_Key>
-    _iterator_type& operator=(const __tree_const_iterator<_Other_Key, _NodeType>& _other_iterator)
+     __tree_const_iterator& operator=(const __tree_const_iterator<_Other_Key, _NodeType>& _other_iterator)
     {
         m_Current = _other_iterator.base();
         return (*this);
     }
 
-    _iterator_type operator++(int) // same as iter++;
+    _const_iterator_type operator++(int) // same as iter++;
     {
         pointer tmp = m_Current;
         m_Current = m_Current->getSuccessor();
         return __tree_const_iterator(tmp);
     }
 
-    _iterator_type& operator++() // same as ++iter;
+    _const_iterator_type& operator++() // same as ++iter;
     {
         m_Current = m_Current->getSuccessor();
         return *this;
     }
 
-    _iterator_type operator--(int)
+    _const_iterator_type operator--(int)
     {
         pointer tmp = m_Current;
         m_Current = m_Current->getPredecessor();
         return __tree_const_iterator(tmp);
     }
 
-    _iterator_type& operator--()
+    _const_iterator_type& operator--()
     {
         m_Current = m_Current->getPredecessor();
         return *this;
@@ -358,6 +365,8 @@ struct RedBlackNode
     typedef RedBlackNode<_KeyType, _Compare>     node_type;
     typedef node_type*                           node_pointer;
     typedef _KeyType                             key_type;
+    typedef _KeyType*                            key_type_pointer;
+    typedef const _KeyType*                      const_key_type_pointer; // for const_map_iterator
     typedef _Compare                             value_compare;
 
 // *-- member data ----------------------------------------------------------------------------
@@ -477,13 +486,21 @@ public: // typedefs
     typedef _KeyType                                                    key_type;
     typedef _Compare                                                    value_compare_type;
     typedef _Allocator                                                  allocator_type;
-    typedef node_type*                                                  node_pointer; // equivalant to node_pointer*
     typedef LeftLeaningRedBlack<key_type, _Compare, _Allocator>         tree_type;
+
+protected:
+    typedef Tree_node_alloc_base<key_type, node_type, _Allocator>       _node_alloc_base;
+    typedef typename _node_alloc_base::node_allocator_type              _node_allocator_type;
+
+public:
+    typedef typename _node_allocator_type::difference_type               difference_type;
+    typedef typename _node_allocator_type::size_type                     size_type;
+    typedef typename _node_allocator_type::pointer                       node_pointer;
+//    typedef node_type*                                                  node_pointer; // equivalant to node_pointer*
+
     typedef __tree_iterator<key_type, node_type>                        iterator;
     typedef __tree_const_iterator<key_type, node_type>                  const_iterator;
 
-private:
-    typedef Tree_node_alloc_base<key_type, node_type, _Allocator>       _node_alloc_base;
 
 private: // private data member
 // *-----------------------------------------------------------------------------
@@ -495,24 +512,28 @@ private: // private data member
 public: // constructor, destructor
 
     // Initializes an empty symbol table.
-    LeftLeaningRedBlack(const value_compare_type& comp = value_compare_type(), const _Allocator& alloc = allocator_type())
+    explicit LeftLeaningRedBlack(const value_compare_type& comp = value_compare_type(), const _Allocator& alloc = allocator_type())
         : _node_alloc_base(alloc), m_Root(NULL), m_Value_compare(comp)
     {}
 
     LeftLeaningRedBlack(const tree_type& other_tree)
-        : m_Root(other_tree.m_Root), m_Value_compare(other_tree.m_Value_compare)
-    {}
+        : m_Value_compare(other_tree.m_Value_compare)
+    {
+        put(other_tree.begin(), other_tree.end());
+    }
 
     explicit LeftLeaningRedBlack(const allocator_type& a)
         : _node_alloc_base(a), m_Root(NULL), m_Value_compare(value_compare_type())
     {}
 
     LeftLeaningRedBlack(const tree_type& other_tree, const allocator_type& a)
-        : _node_alloc_base(a), m_Root(other_tree.m_Root), m_Value_compare(other_tree.m_Value_compare)
-    {}
+        : _node_alloc_base(a), m_Value_compare(other_tree.m_Value_compare)
+    {
+        put(other_tree.begin(), other_tree.end());
+    }
 
     template <class InputIterator>
-    LeftLeaningRedBlack(InputIterator first, InputIterator last, const value_compare_type& comp = key_compare())
+    LeftLeaningRedBlack(InputIterator first, InputIterator last, const value_compare_type& comp = value_compare_type())
         : m_Root(NULL), m_Value_compare(comp)
     {
         put(first, last);
@@ -535,10 +556,10 @@ public: // constructor, destructor
     // contents 깊은 복사해야지 포인터를 다룰게 아니다.
     tree_type& operator=(const tree_type& other_tree)
     {
-        // insert(other_tree.begin(), other_tree.end())
-        // TODO: copy contents ...
-
-        m_Value_compare = other_tree.m_Value_compare;
+        // (1) clear tree.
+        clear();
+        // (2) copy data
+        put(other_tree.begin(), other_tree.end());
     }
 
 
@@ -572,7 +593,7 @@ private:
     }
 
     // color is black if node is null.
-    bool __isRed(node_pointer x)
+    bool __isRed(node_pointer x) const
     {
         if (x == NULL) return false; // null node is black.
         return (x->color == RED);
@@ -582,11 +603,11 @@ private:
 //       Standard BST search
 // ------------------------------------------------------------
 public:
-    node_type min()
-    {
-         if (isEmpty()) throw std::runtime_error("calls min() with empty symbol table");
-         return (begin()->key);
-    }
+//    node_pointer min()
+//    {
+//         if (isEmpty()) throw std::runtime_error("calls min() with empty symbol table");
+//         return (&(begin()->key));
+//    }
 
     iterator begin()
     {
@@ -595,25 +616,44 @@ public:
         return iterator(t);
     }
 
+    const_iterator begin() const
+    {
+        if (isEmpty()) throw std::runtime_error("calls min() with empty symbol table");
+        node_pointer t = __min(m_Root);
+        return const_iterator(t);
+    }
+
     iterator end()
     { return iterator(NULL); }
 
+    const_iterator end() const
+    { return const_iterator(NULL); }
+
     // return true is tree is empty
-    bool isEmpty()
+    bool isEmpty() const
     {
         return (m_Root == NULL);
     }
 
     // find node, which contains target key.
-    node_pointer getNode(const key_type& target_key)
+    node_pointer getNode(const key_type& target_key) const
     {
         return __getNode(m_Root, target_key);
     }
 
+    // if key exist, then return pointer to the key
+    key_type*  getAddressOfKey(const key_type& target_key) const
+    {
+        node_pointer ptr = getNode(target_key);
+
+        if (ptr == NULL)    return NULL; // key not found.
+        else                return &(ptr->key);
+    }
+
+
 private:
     // because std::less only returns true or false, we need to handle equal value.
-    node_pointer __getNode(node_pointer curr, const key_type& target_key)
-    {
+    node_pointer __getNode(node_pointer curr, const key_type& target_key) const {
         while (curr != NULL)
         {
             const int cmp = __compare_value(curr->key, target_key);
@@ -626,8 +666,21 @@ private:
     }
 
 public:
+    size_type size() const
+    {
+        return (std::distance(begin(), end()));
+    }
+
+    size_type max_size() const
+    {
+        return (std::numeric_limits<difference_type>::max());
+    }
+
+
+
+
     // Does this symbol table contain the given key?
-    bool contains(const key_type& key)
+    bool contains(const key_type& key) const
     {
         return (getNode(key) != NULL);
     }
@@ -636,6 +689,11 @@ public:
     //       Red Black tree insertion
     // ------------------------------------------------------------
 public:
+    void put(const key_type& key)
+    {
+        m_Root = __put(m_Root, key);
+        m_Root->color = BLACK; // root color must be black.
+    }
 
     // insert unique data to red black tree.
     template <class InputIterator>
@@ -643,18 +701,13 @@ public:
     {
         while (start != end)
         {
-            put(*start);
+//            put(*start);
+            put(start->key);
+//            key_type key = *start;
+//            put(key);
             ++start;
         }
     }
-
-
-    void put(const key_type& key)
-    {
-        m_Root = __put(m_Root, key);
-        m_Root->color = BLACK; // root color must be black.
-    }
-
 
 private:
 
@@ -677,6 +730,9 @@ private:
             curr->right->parent = curr;
         }
         else                {
+            // ! copy 를 하면 map에서 작동 안함.
+            // 왜냐면 pair<const Key, Value> 이기 때문에...
+            // const 어떻게 copy할 건데?
             curr->key   = target_key;
         }
 
@@ -774,10 +830,10 @@ public:
     // Remove everything.
     void clear()
     {
-        node_pointer ptr = begin();
-        while (ptr != end())
+        iterator itr = begin();
+        while (itr != end())
         {
-            ptr = ptr->getSuccessor();
+            ++itr;
             eraseMin();
         }
     }

@@ -35,44 +35,38 @@ int		main()
     test.put(27);
     TEST::printTree(test);
     test.put(4);
-
     TEST::printTree(test);
-    TEST::LeftLeaningRedBlack<int>::node_pointer ptr = test.begin();
-    while (ptr != test.end())
-    {
-        std::cout << ptr->key << std::endl;
-        ptr = ptr->getSuccessor();
-    }
+
+//    TEST::LeftLeaningRedBlack<int>::iterator t = test.begin();
+    TEST::LeftLeaningRedBlack<int>::iterator t = test.begin();
 
     std::cout << "\n--------------------\n";
     std::cout << "Testing copy... \n";
     std::cout << "         copied tree: \n";
     std::cout << "--------------------\n";
+
+    auto i = *(test.begin());
+    auto i2 = test.begin();
+    auto i3 = *i2;
+    int p = i3.key;
     TEST::LeftLeaningRedBlack<int> other(test.begin(), test.end());
-    TEST::printTree(test);
+    TEST::printTree(other);
 
 
 
+//    std::cout << "\n--------------------\n";
+//    std::cout << "Testing erase... \n";
+//    std::cout << "--------------------\n";
+//
+//    test.erase(3);
+//    TEST::printTree(test);
+//    test.erase(10);
+//    TEST::printTree(test);
+//    test.erase(12);
+//    TEST::printTree(test);
+//    test.erase(8);
+//    TEST::printTree(test);
 
-    std::cout << "\n--------------------\n";
-    std::cout << "Testing erase... \n";
-    std::cout << "--------------------\n";
-
-    test.erase(3);
-    TEST::printTree(test);
-    test.erase(10);
-    TEST::printTree(test);
-    test.erase(12);
-    TEST::printTree(test);
-    test.erase(8);
-    TEST::printTree(test);
-
-    ptr = test.begin();
-    while (ptr != test.end())
-    {
-        std::cout << ptr->key << std::endl;
-        ptr = ptr->getSuccessor();
-    }
 
     return (0);
 }
