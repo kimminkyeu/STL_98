@@ -21,6 +21,18 @@
 //   |                                                            |
 //   --------------------------------------------------------------
 
+//-------------------------------------------------
+// * assert 활성화 관련 define 매크로.
+
+//https://thebook.io/006828/ch01/06/01-01/
+#define FT_ENABLE_ASSERT // 제출용으로 컴파일할 때는 끄자!
+
+//-------------------------------------------------
+
+#include <cassert>
+#ifdef FT_ENABLE_ASSERT
+    #define NDEBUG
+#endif
 
 // ---------------------------------------------------------------------------------------------
 // * handle namespace of library (ex. ft::vector, ft::map)
@@ -32,7 +44,7 @@
 // @ namespace for internal helper function call ( not for API )
 //   - you can access helper functions by calling ft::_PRIVATE::foo()
 
-#define _PRIVATE                        ___hidden_namespace___
+#define _PRIVATE                        _
 #define FT_BEGIN_PRIVATE_NAMESPACE      FT_BEGIN_GLOBAL_NAMESPACE namespace _PRIVATE {
 #define FT_END_PRIVATE_NAMESPACE        } }
 
