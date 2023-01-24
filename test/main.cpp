@@ -28,6 +28,15 @@ int		main()
 
     FT::map<std::string, std::string> dict;
 
+    auto itr3 = dict.begin();
+    FT::map<std::string, std::string>::iterator itr2 = dict.begin();
+    itr2->second = "hi";
+
+    itr2 = --(dict.end());
+    itr2->second = "hello";
+
+//    FT::map<std::string, std::string>::const_iterator const_itr2 = dict.begin();
+//    const_itr2->second = "bew";
 
 
 

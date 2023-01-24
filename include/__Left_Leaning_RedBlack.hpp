@@ -36,17 +36,21 @@ private: // typedef from class Left_Leaning_Red_Black
 
 public:
     typedef typename _Iter_base::iterator_category            iterator_category;   // bidirectional tag
-    typedef typename _Iter_base::value_type           		  node_type; 		   // (NodeType)
+    typedef typename _Iter_base::value_type           		  value_type; 		   // (NodeType)
+    typedef value_type                                        node_type;
     typedef typename _Iter_base::difference_type              difference_type;     // ptrdiff_t
-//    typedef typename _Iter_base::pointer                      pointer;             // (NodeType *)
+
+    // * std::iterator 에는 const_type이 정의되어 있지 않으므로, 여기서는 직접 정의하였다.
     typedef _NodeType*                                        pointer;
+    typedef const _NodeType*                                  const_pointer;
     typedef _NodeType&                                        reference;
-//    typedef typename _Iter_base::reference                    reference;           // (NodeType &)
+    typedef const _NodeType&                                  const_reference;
 
 
 protected: // data member
 // * --------------------------------------------------------------------
     pointer m_Current; // pointer to a single node.
+    pointer m_LastNode;    // pointer to the last node of tree. --> --end() 할 때 필요함.
 // * --------------------------------------------------------------------
 
 public: // constructor & destructor
@@ -60,35 +64,29 @@ public: // constructor & destructor
 
     // constructor Wrapping
     __tree_iterator(const __tree_iterator& _iterator_in)
-            : m_Current(_iterator_in.base())
+            : m_Current(_iterator_in.base()), m_LastNode(_iterator_in.m_LastNode)
     {}
 
-    __tree_iterator(const pointer& _pointer_in) // Node pointer to iterator casting.
-        : m_Current(_pointer_in)
+
+    // * end()를 호출할 경우에만 두번째 파라미터에 last_node의 정보가 들어온다.
+    // * end()를 호출한게 아니라면, 두번재 파라미터는 NULL이 된다.
+    explicit __tree_iterator(const pointer& _node_pointer_in, const pointer& _last_node_hint = NULL) // Node pointer to iterator casting.
+        : m_Current(_node_pointer_in), m_LastNode(_last_node_hint)
     {}
 
-    // copy constructor (used at casting)
+    // 다른 key type을 가리키는 iterator간의 casting. (ex. 서로 다른 type을 node의 KEY로 가진 tree)
     template<typename _Other_Key>
-    __tree_iterator(const __tree_iterator<_Other_Key, _NodeType>& _other_iterator)
-            : m_Current(_other_iterator.base()) // wrapper가 감싸고 있는 부분을 깊은 복사하는 것.
+    explicit __tree_iterator(const __tree_iterator<_Other_Key, _NodeType>& _other_iterator)
+        : m_Current(_other_iterator.base()), m_LastNode(_other_iterator.m_LastNode)
     {}
 
-public: // operator
+public: // operator:
 
-//. Because of explicit keyword on constructor, i added const_iterator cast operator. ( Type-casting [T*] to [const T*] )
-//    operator __tree_iterator<value_type, _NodeType>()
-//    {
-//        return __map_iterator<const value_type*, Container>(this->m_Current);
-//    }
-
-    // m_Current is node_pointer
-    reference operator*() const // this returns node's Key.
+    reference operator*() const // this returns (node&)
     { return (*m_Current); }
-//    { return (m_Current->key); }
 
-    pointer operator->() const // this makes [ Iter->... ] equal to [ Key ->... ]
+    pointer operator->() const // this returns (node pointer->)
     { return (m_Current); }
-//    { return &(m_Current->key); }
 
      template<typename _Other_Key>
     _iterator_type& operator=(const __tree_iterator<_Other_Key, _NodeType>& _other_iterator)
@@ -100,26 +98,39 @@ public: // operator
     _iterator_type operator++(int) // same as iter++;
     {
         pointer tmp = m_Current;
-        m_Current = m_Current->getSuccessor();
+        if (m_Current != NULL) { // if NULL, then do nothing.
+            m_Current = m_Current->getSuccessor();
+        }
         return __tree_iterator(tmp);
     }
 
     _iterator_type& operator++() // same as ++iter;
     {
-        m_Current = m_Current->getSuccessor();
+        if (m_Current != NULL) { // if NULL, then do nothing.
+            m_Current = m_Current->getSuccessor();
+        }
         return *this;
     }
 
-    _iterator_type operator--(int)
+    _iterator_type operator--(int) // same as iter--;
     {
         pointer tmp = m_Current;
-        m_Current = m_Current->getPredecessor();
+        if (m_Current != NULL) { // if NULL, then do nothing.
+            m_Current = m_Current->getPredecessor();
+        }
         return __tree_iterator(tmp);
     }
 
-    _iterator_type& operator--()
+    // ! end()와 NULL을 어떻게 구분할 것인가?
+    // * end()일 경우에만 iterator에 m_last_node 정보가 들어온다.
+    // * 이를 통해 --iterator(NULL)과 --iterator(end())를 구분할 수 있다.
+    _iterator_type& operator--() // same as --iter;
     {
-        m_Current = m_Current->getPredecessor();
+        if (m_Current != NULL) {
+            m_Current = m_Current->getPredecessor();
+        } else if (m_LastNode != NULL) { // if end(), return last element.
+            m_Current = m_LastNode;
+        }
         return *this;
     }
 };
@@ -157,18 +168,23 @@ private: // typedef from class Left_Leaning_Red_Black
 public:
     typedef typename _Iter_base::iterator_category            iterator_category;   // bidirectional tag
     typedef typename _Iter_base::value_type           		  value_type; 		   // (NodeType)
+    typedef value_type                                        node_type;
     typedef typename _Iter_base::difference_type              difference_type;     // ptrdiff_t
-    typedef typename _Iter_base::const_pointer                pointer;             // (NodeType *)
-    typedef typename _Iter_base::reference                    reference;           // (NodeType &)
+
+    // * std::iterator 에는 const_type이 정의되어 있지 않으므로, 여기서는 직접 정의하였다.
+    typedef _NodeType*                                        pointer;
+    typedef const _NodeType*                                  const_pointer;
+    typedef _NodeType&                                        reference;
+    typedef const _NodeType&                                  const_reference;
 
 protected: // data member
 // * --------------------------------------------------------------------
-    pointer m_Current; // pointer to a single node.
+    const_pointer m_Current; // pointer to a single node.
 // * --------------------------------------------------------------------
 
 public: // constructor & destructor
 
-    pointer base() const
+    const_pointer base() const
     { return m_Current; }
 
     __tree_const_iterator()
@@ -190,18 +206,12 @@ public: // constructor & destructor
             : m_Current(_other_iterator.base()) // wrapper가 감싸고 있는 부분을 깊은 복사하는 것.
     {}
 
-public: // operator
+public: // operator:
 
-//. Because of explicit keyword on constructor, i added const_iterator cast operator. ( Type-casting [T*] to [const T*] )
-//    operator __map_iterator<const value_type*, Container>()
-//    {
-//        return __map_iterator<const value_type*, Container>(this->m_Current);
-//    }
-
-    reference operator*() const // this returns node's Key.
+    const_reference operator*() const // this returns node's Key.
     { return (*m_Current); }
 
-    pointer operator->() const // this makes [ Iter->... ] equal to [ Key ->... ]
+    const_pointer operator->() const // this makes [ Iter->... ] equal to [ Key ->... ]
     { return (m_Current); }
 
      template<typename _Other_Key>
@@ -213,7 +223,7 @@ public: // operator
 
     _const_iterator_type operator++(int) // same as iter++;
     {
-        pointer tmp = m_Current;
+        const_pointer tmp = m_Current;
         m_Current = m_Current->getSuccessor();
         return __tree_const_iterator(tmp);
     }
@@ -226,7 +236,7 @@ public: // operator
 
     _const_iterator_type operator--(int)
     {
-        pointer tmp = m_Current;
+        const_pointer tmp = m_Current;
         m_Current = m_Current->getPredecessor();
         return __tree_const_iterator(tmp);
     }
@@ -361,12 +371,17 @@ const bool BLACK = true;
 template <typename _KeyType, class _Compare>
 struct RedBlackNode
 {
-
+    // (1) typedef for node_type
     typedef RedBlackNode<_KeyType, _Compare>     node_type;
     typedef node_type*                           node_pointer;
+    typedef const node_type*                     const_node_pointer;
+
+    // (2) typedef for key_type
     typedef _KeyType                             key_type;
     typedef _KeyType*                            key_type_pointer;
-    typedef const _KeyType*                      const_key_type_pointer; // for const_map_iterator
+    typedef const _KeyType*                      const_key_type_pointer;    // for const_map_iterator
+    typedef _KeyType&                            key_type_reference;
+    typedef const _KeyType&                      const_key_type_reference;  // for const_map_iterator
     typedef _Compare                             value_compare;
 
 // *-- member data ----------------------------------------------------------------------------
@@ -496,7 +511,6 @@ public:
     typedef typename _node_allocator_type::difference_type               difference_type;
     typedef typename _node_allocator_type::size_type                     size_type;
     typedef typename _node_allocator_type::pointer                       node_pointer;
-//    typedef node_type*                                                  node_pointer; // equivalant to node_pointer*
 
     typedef __tree_iterator<key_type, node_type>                        iterator;
     typedef __tree_const_iterator<key_type, node_type>                  const_iterator;
@@ -603,31 +617,38 @@ private:
 //       Standard BST search
 // ------------------------------------------------------------
 public:
-//    node_pointer min()
-//    {
-//         if (isEmpty()) throw std::runtime_error("calls min() with empty symbol table");
-//         return (&(begin()->key));
-//    }
 
     iterator begin()
     {
-        if (isEmpty()) throw std::runtime_error("calls min() with empty symbol table");
+        if (isEmpty()) throw std::runtime_error("calls begin() with empty symbol table");
         node_pointer t = __min(m_Root);
         return iterator(t);
     }
 
     const_iterator begin() const
     {
-        if (isEmpty()) throw std::runtime_error("calls min() with empty symbol table");
+        if (isEmpty()) throw std::runtime_error("calls begin() with empty symbol table");
         node_pointer t = __min(m_Root);
         return const_iterator(t);
     }
 
+    // this returns address of last node. (=Largest node)
+    node_pointer getLastNode()
+    {
+        if (isEmpty()) throw std::runtime_error("getLastNode() with empty symbol table");
+        node_pointer t = __max(m_Root);
+        return t;
+    }
+
+    // * -----------------------------------------------------------------
+    // * iterator(NULL)과 iterator(end())를 구분하기 위함.
+    // * --end()는 마지막 노드를 반환하기 떄문.
     iterator end()
-    { return iterator(NULL); }
+    { return iterator(NULL, getLastNode()); }
 
     const_iterator end() const
-    { return const_iterator(NULL); }
+    { return const_iterator(NULL, getLastNode()); }
+    // * -----------------------------------------------------------------
 
     // return true is tree is empty
     bool isEmpty() const
@@ -652,8 +673,21 @@ public:
 
 
 private:
+    // target_key 보다 작거나 같은 값 중 가장 가까운 값.
+    node_pointer __getLowerBound(node_pointer curr, const key_type& target_key) const
+    {
+
+    }
+
+    // target_key 보다 큰 값 중 가장 가까운 값
+    node_pointer __getUpperBound(node_pointer curr, const key_type& target_key) const
+    {
+
+    }
+
     // because std::less only returns true or false, we need to handle equal value.
-    node_pointer __getNode(node_pointer curr, const key_type& target_key) const {
+    node_pointer __getNode(node_pointer curr, const key_type& target_key) const
+    {
         while (curr != NULL)
         {
             const int cmp = __compare_value(curr->key, target_key);
@@ -664,6 +698,10 @@ private:
         }
         return NULL; // key not found
     }
+
+// ------------------------------------------------------------
+//       LLRBT helper method.
+// ------------------------------------------------------------
 
 public:
     size_type size() const
@@ -676,7 +714,12 @@ public:
         return (std::numeric_limits<difference_type>::max());
     }
 
-
+    // swap data with another red black tree
+    void swap(tree_type& other)
+    {
+        FT::swap(this->m_Root, other.m_Root);
+        FT::swap(this->m_Value_compare, other.m_Value_compare);
+    }
 
 
     // Does this symbol table contain the given key?
@@ -1070,6 +1113,12 @@ private:
     {
         if (x->left == NULL) { return x; }
         else                 { return __min(x->left); }
+    }
+
+    node_pointer __max(node_pointer x)
+    {
+        if (x->right == NULL) { return x; }
+        else                  { return __max(x->right); }
     }
 
 private:

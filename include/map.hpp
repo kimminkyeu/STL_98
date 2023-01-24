@@ -29,24 +29,30 @@ FT_BEGIN_PRIVATE_NAMESPACE
 // * 그렇게 할 경우 __tree_base (ex. Red Black Tree) 의 로직이 이 node iterator를 기반으로 하고 있어서
 // * 수정하는 순간 펑 ! 하고 터집니다.
 
-template <class _TreeIterator>
+template <typename _Pair, typename _NodeType, class _TreeIterator = _PRIVATE::__tree_iterator<_Pair, _NodeType> >
 class __map_iterator
 {
-
 private:
     typedef typename _TreeIterator::node_type                    _node_type;   //  RbNode
+
+private: // helper function
+    const _TreeIterator& base() const _NOEXCEPT
+    { return __i_; }
 
 private: // data member
 // * -------------------------------------------
     _TreeIterator __i_;
 // * -------------------------------------------
 
+
 public:
     typedef std::bidirectional_iterator_tag                      iterator_category;
-    typedef typename _node_type::key_type                        value_type;        // pair
+    typedef typename _node_type::key_type                        value_type;            // pair
     typedef typename _TreeIterator::difference_type              difference_type;
-    typedef value_type&                                          reference;
-    typedef typename _node_type::key_type_pointer                pointer;  // const pair *
+    typedef typename _node_type::key_type_reference              reference;             // pair &
+    typedef typename _node_type::const_key_type_reference        const_reference;       // const pair &
+    typedef typename _node_type::key_type_pointer                pointer;               // pair *
+    typedef typename _node_type::const_key_type_pointer          const_pointer;         // const pair *
 
     __map_iterator() _NOEXCEPT
     {}
@@ -86,12 +92,15 @@ public:
     friend
     bool operator!=(const __map_iterator& __x, const __map_iterator& __y)
     {return __x.__i_ != __y.__i_;}
+
+
+    // map_iterator에서 map_const_iterator로 캐스팅할때, 복사 생성자 부분의 base를 사용하기 위해 friend로 선언함.
+    template<typename T, typename U, typename K> friend class __map_const_iterator;
 };
 
-template <class _TreeIterator>
+template <typename _Pair, typename _NodeType, class _TreeIterator = _PRIVATE::__tree_iterator<_Pair, _NodeType> >
 class __map_const_iterator
 {
-
 private:
     typedef typename _TreeIterator::node_type                    _node_type;
 
@@ -100,13 +109,20 @@ private: // data member
     _TreeIterator __i_;
 // * -------------------------------------------
 
+private: // helper function
+    const _TreeIterator& base() const _NOEXCEPT
+    { return __i_; }
+
 public:
     typedef std::bidirectional_iterator_tag                      iterator_category;
-    typedef typename _node_type::key_type                        value_type;        // pair
+    typedef typename _node_type::key_type                        value_type;            // pair
     typedef typename _TreeIterator::difference_type              difference_type;
-    typedef value_type&                                          reference;
-    typedef typename _node_type::const_key_type_pointer          pointer;  // const pair *
+    typedef typename _node_type::key_type_reference              reference;             // pair &
+    typedef typename _node_type::const_key_type_reference        const_reference;       // const pair &
+    typedef typename _node_type::key_type_pointer                pointer;               // pair *
+    typedef typename _node_type::const_key_type_pointer          const_pointer;         // const pair *
 
+public:
     __map_const_iterator() _NOEXCEPT
     {}
 
@@ -114,10 +130,16 @@ public:
             : __i_(__i)
     {}
 
-    reference operator*() const
+    // copy constructor, from normal iterator to const_iterator (used at casting)
+    template<typename Key, typename NodeType>
+    __map_const_iterator(const __map_iterator<Key, NodeType>& _other_iterator)
+            : __i_(_other_iterator.base()) // wrapper가 감싸고 있는 부분을 깊은 복사하는 것.
+    {}
+
+    const_reference operator*() const
     { return (__i_->key); }
 
-    pointer operator->() const
+    const_pointer operator->() const
     { return &(__i_->key); }
 
     __map_const_iterator& operator++() {++__i_; return *this;}
@@ -207,18 +229,17 @@ public:
         }
     };
 
-private:
-    // * 여기서 pair type 정렬을 위한 value_compare를 넣어준다.
-    typedef _PRIVATE::LeftLeaningRedBlack<value_type, value_compare>        _map_base;
-    typedef FT::map<Key, Value, Compare, Allocator>                         _map_type;
+private: // * 여기서 pair type 정렬을 위한 value_compare를 넣어준다.
+    typedef _PRIVATE::LeftLeaningRedBlack<value_type, value_compare>                  _map_base;
+    typedef FT::map<Key, Value, Compare, Allocator>                                   _map_type;
+    typedef typename _map_base::node_pointer                                          _node_pointer;
+    typedef typename _map_base::node_type                                             _node_type;
 
 public:
-    // WARN: map base's iterator is a pointer to a tree-Node.
-    // need to convert.
-    typedef _PRIVATE::__map_iterator<typename _map_base::iterator>                    iterator;
-    typedef _PRIVATE::__map_const_iterator<typename _map_base::const_iterator>        const_iterator;
-    typedef typename FT::reverse_iterator<iterator>                         reverse_iterator;
-    typedef typename FT::reverse_iterator<const_iterator>                   const_reverse_iterator;
+    typedef _PRIVATE::__map_iterator<value_type, _node_type>                         iterator;
+    typedef _PRIVATE::__map_const_iterator<value_type, _node_type>                   const_iterator;
+    typedef typename FT::reverse_iterator<iterator>                                   reverse_iterator;
+    typedef typename FT::reverse_iterator<const_iterator>                             const_reverse_iterator;
 
 
 private: // Member data:
@@ -363,51 +384,123 @@ public:
      */
     FT::pair<iterator, bool> insert(const value_type& v) _NOEXCEPT
     {
-        // 1. check if it has data.
-        value_type* pair_ptr = __tree__.getAddressOfKey(v);
-        if (pair_ptr != NULL) { // if pair already exists.
-            return FT::make_pair( iterator(pair_ptr), false );
-        } else { // if pair doesn't exist, insert data.
+        // check if it has data.
+        _node_pointer node_ptr = __tree__.getNode(v);
+
+        if (node_ptr != NULL) // if node already exists.
+        {
+            return FT::make_pair( iterator( _map_base::iterator(node_ptr) ), false );
+        }
+        else // if pair doesn't exist, insert data.
+        {
             __tree__.put(v);
-            pair_ptr = __tree__.getAddressOfKey(v);
-            return FT::make_pair( iterator(pair_ptr), true );
+            node_ptr = __tree__.getNode(v);
+            return FT::make_pair( iterator( _map_base::iterator(node_ptr) ), true );
         }
     }
 
-    iterator insert(const_iterator position, const value_type& v)
+    // Inserts value in the position as close as possible to the position just prior to pos
+    // The versions with a hint (position) return an iterator pointing to either the newly inserted element
+    // or to the element that already had an equivalent key in the map.
+    iterator insert(const_iterator position, const value_type& v) _NOEXCEPT
     {
-
+        __tree__.put(v);
+        _node_pointer node_ptr = __tree__.getNode(v);
+        return iterator( _map_base::iterator(node_ptr) );
     }
 
     template <class InputIterator>
-    void insert(InputIterator first, InputIterator last)
+    void insert(InputIterator first, InputIterator last) _NOEXCEPT
     {
         __tree__.put(first, last);
     }
 
-    void clear()
+    void clear() _NOEXCEPT
     {
         __tree__.clear();
     }
 
-    void erase( iterator pos );
-    void erase( iterator first, iterator last );
-    size_type erase( const Key& key );
-    void swap( map& other );
+    void erase( iterator pos ) _NOEXCEPT
+    {
+        __tree__.erase(*pos);
+    }
+
+    void erase( iterator first, iterator last ) _NOEXCEPT
+    {
+        while (first != last)
+        {
+            __tree__.erase(*(first++));
+        }
+    }
+
+    size_type erase( const Key& key ) _NOEXCEPT
+    {
+        __tree__.erase(key);
+    }
+
+    // Exchanges the content of the container by the content of x, which is
+    // another map of the same type. Sizes may differ.
+    void swap( map& other ) _NOEXCEPT
+    {
+        __tree__.swap(other.__tree__);
+    }
 
 public:
     // Lookup:
-    size_type count( const Key& key ) const;
-    iterator find( const Key& key );
-    const_iterator find( const Key& key ) const;
 
-    FT::pair<iterator,iterator> equal_range( const Key& key );
-    FT::pair<const_iterator,const_iterator> equal_range( const Key& key ) const;
+    //  Returns the number of elements with _key.
+    //  This is either 1 or 0 since this container does not allow duplicates.
+    size_type count( const Key& _key ) const
+    {
+        if (__tree__.contains(_key))     return 1;
+        else                            return 0;
+    }
 
-    iterator lower_bound( const Key& key );
-    const_iterator lower_bound( const Key& key ) const;
+    // Returns an Iterator to an element with key equivalent to _key.
+    // If no such element is found, past-the-end (see end()) iterator is returned.
+    iterator find( const Key& _key )
+    {
+        _node_pointer node_ptr = __tree__.getNode(value_type(_key, mapped_type()));
+        return iterator( _map_base::iterator(node_ptr) );
+    }
+
+    const_iterator find( const Key& _key ) const
+    {
+        _node_pointer node_ptr = __tree__.getNode(value_type(_key, mapped_type()));
+        return const_iterator( _map_base::iterator(node_ptr) );
+    }
+
+    FT::pair<iterator,iterator> equal_range( const Key& _key )
+    {
+//        iterator start = find(_key);
+//        return FT::make_pair( start, ++start );
+    }
+
+    FT::pair<const_iterator,const_iterator> equal_range( const Key& _key ) const
+    {
+//        const_iterator start = find(_key);
+//        return FT::make_pair( start, ++start );
+    }
+
+    // Returns an iterator pointing to the first element
+    // that is not less than (i.e. greater or equal to) key.
+    iterator lower_bound( const Key& key )
+    {
+        // 입력된 key보다 크거나 같은 값을 반환.
+        // 원소 순회하면서 key 비교.
+        iterator itr = begin();
+
+    }
+
+    // Returns an iterator pointing to the first element
+    // that is greater than key.
+    const_iterator lower_bound( const Key& key ) const
+    {
+
+    }
 
     iterator upper_bound( const Key& key );
+
     const_iterator upper_bound( const Key& key ) const;
 
 public:
