@@ -4,6 +4,7 @@
 
 
 #ifndef FT_CONTAINER_MAP_HPP
+#define FT_CONTAINER_MAP_HPP
 
 #include <memory>
 #include <functional> // for std::less
@@ -11,12 +12,11 @@
 #include "__Left_Leaning_RedBlack.hpp"
 #include "__config.hpp"
 
-
 FT_BEGIN_PRIVATE_NAMESPACE
 
 // ---------------------------------------------------------------
 // |                                                             |
-// |                   map_iterator_implementation               |
+// |               map_iterator_implementation                   |
 // |                                                             |
 // ---------------------------------------------------------------
 // * [map_iterator를 구현한 이유]
@@ -30,7 +30,7 @@ FT_BEGIN_PRIVATE_NAMESPACE
 // * 수정하는 순간 펑 ! 하고 터집니다.
 
 template <typename _Pair, typename _NodeType, class _TreeIterator = _PRIVATE::__tree_iterator<_Pair, _NodeType> >
-class __map_iterator
+class FT_TEMPLATE_VIS __map_iterator
 {
 private:
     typedef typename _TreeIterator::node_type                    _node_type;   //  RbNode
@@ -44,7 +44,6 @@ private: // data member
     _TreeIterator __i_;
 // * -------------------------------------------
 
-
 public:
     typedef std::bidirectional_iterator_tag                      iterator_category;
     typedef typename _node_type::key_type                        value_type;            // pair
@@ -54,21 +53,27 @@ public:
     typedef typename _node_type::key_type_pointer                pointer;               // pair *
     typedef typename _node_type::const_key_type_pointer          const_pointer;         // const pair *
 
+    FT_HIDE_FROM_ABI
     __map_iterator() _NOEXCEPT
     {}
 
+    FT_HIDE_FROM_ABI
     __map_iterator(_TreeIterator __i) _NOEXCEPT
         : __i_(__i)
     {}
 
+    FT_HIDE_FROM_ABI
     reference operator*() const
     { return (__i_->key); }
 
+    FT_HIDE_FROM_ABI
     pointer operator->() const
     { return &(__i_->key); }
 
+    FT_HIDE_FROM_ABI
     __map_iterator& operator++() {++__i_; return *this;}
 
+    FT_HIDE_FROM_ABI
     __map_iterator operator++(int)
     {
         __map_iterator __t(*this);
@@ -76,8 +81,10 @@ public:
         return __t;
     }
 
+    FT_HIDE_FROM_ABI
     __map_iterator& operator--() {--__i_; return *this;}
 
+    FT_HIDE_FROM_ABI
     __map_iterator operator--(int)
     {
         __map_iterator __t(*this);
@@ -85,21 +92,24 @@ public:
         return __t;
     }
 
-    friend
+    friend FT_HIDE_FROM_ABI
     bool operator==(const __map_iterator& __x, const __map_iterator& __y)
     {return __x.__i_ == __y.__i_;}
 
-    friend
+    friend FT_HIDE_FROM_ABI
     bool operator!=(const __map_iterator& __x, const __map_iterator& __y)
     {return __x.__i_ != __y.__i_;}
 
-
-    // map_iterator에서 map_const_iterator로 캐스팅할때, 복사 생성자 부분의 base를 사용하기 위해 friend로 선언함.
-    template<typename T, typename U, typename K> friend class __map_const_iterator;
+    // * ---------------------------------------------------------
+    // * map_iterator에서 map_const_iterator로 캐스팅할 때
+    // * 복사 생성자 부분의 base를 사용하기 위해 friend로 선언하였습니다.
+    template<typename, typename, typename >
+    FT_HIDE_FROM_ABI friend class __map_const_iterator;
+    // * ---------------------------------------------------------
 };
 
 template <typename _Pair, typename _NodeType, class _TreeIterator = _PRIVATE::__tree_iterator<_Pair, _NodeType> >
-class __map_const_iterator
+class FT_TEMPLATE_VIS __map_const_iterator
 {
 private:
     typedef typename _TreeIterator::node_type                    _node_type;
@@ -123,27 +133,35 @@ public:
     typedef typename _node_type::const_key_type_pointer          const_pointer;         // const pair *
 
 public:
+    FT_HIDE_FROM_ABI
     __map_const_iterator() _NOEXCEPT
     {}
 
+    FT_HIDE_FROM_ABI
     __map_const_iterator(_TreeIterator __i) _NOEXCEPT
             : __i_(__i)
     {}
 
     // copy constructor, from normal iterator to const_iterator (used at casting)
+    // * 바로 여기 때문에 map_iterator class에서 friend를 선언한 것입니다. (109줄 참고)
     template<typename Key, typename NodeType>
+    FT_HIDE_FROM_ABI
     __map_const_iterator(const __map_iterator<Key, NodeType>& _other_iterator)
             : __i_(_other_iterator.base()) // wrapper가 감싸고 있는 부분을 깊은 복사하는 것.
     {}
 
+    FT_HIDE_FROM_ABI
     const_reference operator*() const
     { return (__i_->key); }
 
+    FT_HIDE_FROM_ABI
     const_pointer operator->() const
     { return &(__i_->key); }
 
+    FT_HIDE_FROM_ABI
     __map_const_iterator& operator++() {++__i_; return *this;}
 
+    FT_HIDE_FROM_ABI
     __map_const_iterator operator++(int)
     {
         __map_const_iterator __t(*this);
@@ -151,8 +169,10 @@ public:
         return __t;
     }
 
+    FT_HIDE_FROM_ABI
     __map_const_iterator& operator--() {--__i_; return *this;}
 
+    FT_HIDE_FROM_ABI
     __map_const_iterator operator--(int)
     {
         __map_const_iterator __t(*this);
@@ -160,20 +180,16 @@ public:
         return __t;
     }
 
-    friend
+    friend FT_HIDE_FROM_ABI
     bool operator==(const __map_const_iterator& __x, const __map_const_iterator& __y)
     {return __x.__i_ == __y.__i_;}
 
-    friend
+    friend FT_HIDE_FROM_ABI
     bool operator!=(const __map_const_iterator& __x, const __map_const_iterator& __y)
     {return __x.__i_ != __y.__i_;}
 };
 
 FT_END_PRIVATE_NAMESPACE
-
-
-
-
 
 
 
@@ -218,11 +234,19 @@ public:
     {
         friend class map<key_type, mapped_type, key_compare, allocator_type>;
 
-    protected:
+    protected: // data member
+        // ------------------------
         Compare comp;
-        value_compare(Compare c) : comp(c) {}
+        // ------------------------
+
+    protected:
+        FT_HIDE_FROM_ABI
+        value_compare(Compare c) _NOEXCEPT
+            : comp(c)
+        {}
 
     public:
+        FT_HIDE_FROM_ABI
         bool operator()(const value_type &x, const value_type &y) const
         {
             return (comp(x.first, y.first));
@@ -250,12 +274,13 @@ private: // Member data:
 
 public: // constructor & destructor.
 
+    FT_HIDE_FROM_ABI
     explicit map(const key_compare& comp = key_compare(), const allocator_type& a = allocator_type())
             : __tree__(comp, a)
     {}
 
-
     template <class InputIterator>
+    FT_HIDE_FROM_ABI
     map(InputIterator first, InputIterator last, const key_compare& comp = key_compare())
             : __tree__(comp)
     {
@@ -263,34 +288,38 @@ public: // constructor & destructor.
     }
 
     template <class InputIterator>
+    FT_HIDE_FROM_ABI
     map(InputIterator first, InputIterator last, const key_compare& comp, const allocator_type& a)
             : __tree__(comp, a)
     {
         this->insert(first, last);
     }
 
+    FT_HIDE_FROM_ABI
     map(const _map_type& m)
             : __tree__(m.__tree__)
     {}
 
+    FT_HIDE_FROM_ABI
     explicit map(const allocator_type& a)
             : __tree__(a)
     {}
 
+    FT_HIDE_FROM_ABI
     map(const _map_type& m, const allocator_type& a)
             : __tree__(m.__tree__, a)
     {}
 
     ~map()
-    {
-        // ...
-    }
+    { /* destruct everything in tree_base */ }
 
+    FT_HIDE_FROM_ABI
     map& operator=(const _map_type& m)
     {
         __tree__ = m.__tree__;
     }
 
+    FT_HIDE_FROM_ABI
     allocator_type get_allocator() const _NOEXCEPT
     {
         return allocator_type();
@@ -298,38 +327,49 @@ public: // constructor & destructor.
 
 public:
     // iterators:
+    FT_HIDE_FROM_ABI
     iterator begin() _NOEXCEPT
     { return __tree__.begin(); }
 
+    FT_HIDE_FROM_ABI
     const_iterator begin() const _NOEXCEPT
     { return __tree__.begin(); }
 
+    FT_HIDE_FROM_ABI
     iterator end() _NOEXCEPT
     { return __tree__.end(); }
 
+    FT_HIDE_FROM_ABI
     const_iterator end() const _NOEXCEPT
     { return __tree__.end(); }
 
+    FT_HIDE_FROM_ABI
     reverse_iterator rbegin() _NOEXCEPT
     { return reverse_iterator(end()); }
 
+    FT_HIDE_FROM_ABI
     const_reverse_iterator rbegin() const _NOEXCEPT
     { return const_reverse_iterator(end()); }
 
+    FT_HIDE_FROM_ABI
     reverse_iterator rend() _NOEXCEPT
     { return reverse_iterator(begin()); }
 
+    FT_HIDE_FROM_ABI
     const_reverse_iterator rend() const _NOEXCEPT
     { return const_reverse_iterator(begin()); }
 
 public:
     // capacity:
+    FT_HIDE_FROM_ABI
     bool empty() const _NOEXCEPT
     { return __tree__.isEmpty(); }
 
+    FT_HIDE_FROM_ABI
     size_type size() const _NOEXCEPT
     { return __tree__.size(); }
 
+    FT_HIDE_FROM_ABI
     size_type max_size() const _NOEXCEPT
     { return __tree__.max_size(); }
 
@@ -339,6 +379,7 @@ public:
     // Returns a reference to the value that is mapped to a key -
     // equivalent to [k], performing an insertion if such key does not already exist.
     // Inserts value_type(key, T()) if the key does not exist.
+    FT_HIDE_FROM_ABI
     mapped_type& operator[](const key_type& k) _NOEXCEPT
     {
         // [ value_type(...) ] == [ FT::pair<const key_type, mapped_type >(...) ]
@@ -352,6 +393,7 @@ public:
     }
 
     // 왜 이렇게 하나면.. __tree__ 의 key 자체가 pair 타입이기 때문이다. pair끼리 비교해서 값을 찾아낸다.
+    FT_HIDE_FROM_ABI
     mapped_type& at(const key_type& k)
     {
         value_type* pair_ptr = __tree__.getAddressOfKey(value_type(k, mapped_type()));
@@ -362,6 +404,7 @@ public:
         return (pair_ptr->second);
     }
 
+    FT_HIDE_FROM_ABI
     const mapped_type& at(const key_type& k) const
     {
         value_type* pair_ptr = __tree__.getAddressOfKey(value_type(k, mapped_type()));
@@ -375,13 +418,12 @@ public:
 public:
     // modifiers:
 
-     /**
-     Inserts element(s) into the container, if the container
-     doesn't already contain an element with an equivalent key.
-     @Return a pair consisting of an iterator to the inserted element
-             (or to the element that prevented the insertion)
-             and a bool value set to true if and only if the insertion took place.
-     */
+    //  Inserts element(s) into the container, if the container
+    //  doesn't already contain an element with an equivalent key.
+    //  Return a pair consisting of an iterator to the inserted element
+    //  (or to the element that prevented the insertion)
+    //  and a bool value set to true if and only if the insertion took place.
+    FT_HIDE_FROM_ABI
     FT::pair<iterator, bool> insert(const value_type& v) _NOEXCEPT
     {
         // check if it has data.
@@ -402,6 +444,7 @@ public:
     // Inserts value in the position as close as possible to the position just prior to pos
     // The versions with a hint (position) return an iterator pointing to either the newly inserted element
     // or to the element that already had an equivalent key in the map.
+    FT_HIDE_FROM_ABI
     iterator insert(const_iterator position, const value_type& v) _NOEXCEPT
     {
         __tree__.put(v);
@@ -410,21 +453,25 @@ public:
     }
 
     template <class InputIterator>
+    FT_HIDE_FROM_ABI
     void insert(InputIterator first, InputIterator last) _NOEXCEPT
     {
         __tree__.put(first, last);
     }
 
+    FT_HIDE_FROM_ABI
     void clear() _NOEXCEPT
     {
         __tree__.clear();
     }
 
+    FT_HIDE_FROM_ABI
     void erase( iterator pos ) _NOEXCEPT
     {
         __tree__.erase(*pos);
     }
 
+    FT_HIDE_FROM_ABI
     void erase( iterator first, iterator last ) _NOEXCEPT
     {
         while (first != last)
@@ -433,6 +480,7 @@ public:
         }
     }
 
+    FT_HIDE_FROM_ABI
     size_type erase( const Key& key ) _NOEXCEPT
     {
         __tree__.erase(key);
@@ -440,6 +488,7 @@ public:
 
     // Exchanges the content of the container by the content of x, which is
     // another map of the same type. Sizes may differ.
+    FT_HIDE_FROM_ABI
     void swap( map& other ) _NOEXCEPT
     {
         __tree__.swap(other.__tree__);
@@ -450,104 +499,180 @@ public:
 
     //  Returns the number of elements with _key.
     //  This is either 1 or 0 since this container does not allow duplicates.
-    size_type count( const Key& _key ) const
+    FT_HIDE_FROM_ABI
+    size_type count( const Key& _key ) const _NOEXCEPT
     {
         if (__tree__.contains(_key))     return 1;
-        else                            return 0;
+        else                                  return 0;
     }
 
     // Returns an Iterator to an element with key equivalent to _key.
     // If no such element is found, past-the-end (see end()) iterator is returned.
-    iterator find( const Key& _key )
+    FT_HIDE_FROM_ABI
+    iterator find( const Key& _key ) _NOEXCEPT
     {
         _node_pointer node_ptr = __tree__.getNode(value_type(_key, mapped_type()));
         return iterator( _map_base::iterator(node_ptr) );
     }
 
-    const_iterator find( const Key& _key ) const
+    FT_HIDE_FROM_ABI
+    const_iterator find( const Key& _key ) const _NOEXCEPT
     {
         _node_pointer node_ptr = __tree__.getNode(value_type(_key, mapped_type()));
         return const_iterator( _map_base::iterator(node_ptr) );
     }
 
-    FT::pair<iterator,iterator> equal_range( const Key& _key )
+    FT_HIDE_FROM_ABI
+    FT::pair<iterator,iterator> equal_range( const Key& _key ) _NOEXCEPT
     {
-//        iterator start = find(_key);
-//        return FT::make_pair( start, ++start );
+        return FT::pair<iterator, iterator>(lower_bound(_key), upper_bound(_key));
     }
 
-    FT::pair<const_iterator,const_iterator> equal_range( const Key& _key ) const
+    FT_HIDE_FROM_ABI
+    FT::pair<const_iterator,const_iterator> equal_range( const Key& _key ) const _NOEXCEPT
     {
-//        const_iterator start = find(_key);
-//        return FT::make_pair( start, ++start );
+        return FT::pair<const_iterator, const_iterator>(lower_bound(_key), upper_bound(_key));
     }
 
     // Returns an iterator pointing to the first element
     // that is not less than (i.e. greater or equal to) key.
-    iterator lower_bound( const Key& key )
+    FT_HIDE_FROM_ABI
+    iterator lower_bound( const Key& key ) _NOEXCEPT
     {
-        // 입력된 key보다 크거나 같은 값을 반환.
-        // 원소 순회하면서 key 비교.
-        iterator itr = begin();
-
+        _node_pointer node_ptr = __tree__.getLowerBoundNode(key);
+        if (node_ptr == NULL) {
+            // If no such element is found, a past-the-end iterator (see end()) is returned.
+            return (this->end());
+        } else {
+            return iterator( _map_base::iterator(node_ptr) );
+        }
     }
 
     // Returns an iterator pointing to the first element
     // that is greater than key.
-    const_iterator lower_bound( const Key& key ) const
+    FT_HIDE_FROM_ABI
+    const_iterator lower_bound( const Key& key ) const _NOEXCEPT
     {
-
+        _node_pointer node_ptr = __tree__.getLowerBoundNode(key);
+        if (node_ptr == NULL) {
+            // If no such element is found, a past-the-end iterator (see end()) is returned.
+            return (this->end());
+        } else {
+            return const_iterator( _map_base::iterator(node_ptr) );
+        }
     }
 
-    iterator upper_bound( const Key& key );
+    FT_HIDE_FROM_ABI
+    iterator upper_bound( const Key& key ) _NOEXCEPT
+    {
+        _node_pointer node_ptr = __tree__.getUpperBoundNode(key);
+        if (node_ptr == NULL) {
+            // If no such element is found, a past-the-end iterator (see end()) is returned.
+            return (this->end());
+        } else {
+            return iterator( _map_base::iterator(node_ptr) );
+        }
+    }
 
-    const_iterator upper_bound( const Key& key ) const;
+    FT_HIDE_FROM_ABI
+    const_iterator upper_bound( const Key& key ) const _NOEXCEPT
+    {
+        _node_pointer node_ptr = __tree__.getUpperBoundNode(key);
+        if (node_ptr == NULL) {
+            // If no such element is found, a past-the-end iterator (see end()) is returned.
+            return (this->end());
+        } else {
+            return const_iterator( _map_base::iterator(node_ptr) );
+        }
+    }
 
 public:
     // Observers:
-    key_compare key_comp() const;
-    value_compare value_comp() const;
+    FT_HIDE_FROM_ABI
+    key_compare key_comp() const _NOEXCEPT
+    { return key_compare(); }
+
+    FT_HIDE_FROM_ABI
+    value_compare value_comp() const _NOEXCEPT
+    { return value_compare(); }
 
 };
 
 // Non-member functions:
+
+// Checks if the contents of lhs and rhs are equal, that is, they have
+// the same number of elements and each element in lhs compares
+// equal with the element in rhs at the same position.
 template <class Key, class T, class Compare, class Allocator>
+inline FT_HIDE_FROM_ABI
 bool
-operator==(const map<Key, T, Compare, Allocator>& x,
-           const map<Key, T, Compare, Allocator>& y);
+operator==(const map<Key, T, Compare, Allocator>& __x,
+           const map<Key, T, Compare, Allocator>& __y)
+{
+    return __x.size() == __y.size() && FT::equal(__x.begin(), __x.end(), __y.begin());
+}
 
 template <class Key, class T, class Compare, class Allocator>
+inline FT_HIDE_FROM_ABI
 bool
-operator< (const map<Key, T, Compare, Allocator>& x,
-           const map<Key, T, Compare, Allocator>& y);
+operator!=(const map<Key, T, Compare, Allocator>& __x,
+           const map<Key, T, Compare, Allocator>& __y)
+{
+    return !(__x == __y);
+}
+
+
+// Compares the contents of lhs and rhs lexicographically.
+// The comparison is performed by a function equivalent to
+// std::lexicographical_compare. This comparison ignores the map's ordering Compare.
+template <class Key, class T, class Compare, class Allocator>
+inline FT_HIDE_FROM_ABI
+bool
+operator< (const map<Key, T, Compare, Allocator>& __x,
+           const map<Key, T, Compare, Allocator>& __y)
+{
+    return FT::lexicographical_compare(__x.begin(), __x.end(), __y.begin(), __y.end());
+}
+
+
 
 template <class Key, class T, class Compare, class Allocator>
+inline FT_HIDE_FROM_ABI
 bool
-operator!=(const map<Key, T, Compare, Allocator>& x,
-           const map<Key, T, Compare, Allocator>& y);
+operator> (const map<Key, T, Compare, Allocator>& __x,
+           const map<Key, T, Compare, Allocator>& __y)
+{
+    return __y < __x;
+}
 
 template <class Key, class T, class Compare, class Allocator>
+inline FT_HIDE_FROM_ABI
 bool
-operator> (const map<Key, T, Compare, Allocator>& x,
-           const map<Key, T, Compare, Allocator>& y);
+operator>=(const map<Key, T, Compare, Allocator>& __x,
+           const map<Key, T, Compare, Allocator>& __y)
+{
+    return !(__x < __y);
+}
 
 template <class Key, class T, class Compare, class Allocator>
+inline FT_HIDE_FROM_ABI
 bool
-operator>=(const map<Key, T, Compare, Allocator>& x,
-           const map<Key, T, Compare, Allocator>& y);
-
-template <class Key, class T, class Compare, class Allocator>
-bool
-operator<=(const map<Key, T, Compare, Allocator>& x,
-           const map<Key, T, Compare, Allocator>& y);
+operator<=(const map<Key, T, Compare, Allocator>& __x,
+           const map<Key, T, Compare, Allocator>& __y)
+{
+    return !(__y < __x);
+}
 
 // specialized algorithms:
 template <class Key, class T, class Compare, class Allocator>
+inline FT_HIDE_FROM_ABI
 void
-swap(map<Key, T, Compare, Allocator>& x, map<Key, T, Compare, Allocator>& y); /* (C++17) _NOEXCEPT_(_NOEXCEPT_(x.swap(y))) */
+swap(map<Key, T, Compare, Allocator>& __x, map<Key, T, Compare, Allocator>& __y) /* (C++17) _NOEXCEPT_(_NOEXCEPT_(x.swap(y))) */
+{
+    __x.swap(__y);
+}
 
 FT_END_GLOBAL_NAMESPACE
 
-#define FT_CONTAINER_MAP_HPP
 
 #endif //FT_CONTAINER_MAP_HPP
