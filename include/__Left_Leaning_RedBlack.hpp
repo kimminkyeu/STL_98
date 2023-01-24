@@ -392,20 +392,20 @@ struct RedBlackNode
     RedBlackNode*       parent;         // for iterator system
 // *-------------------------------------------------------------------------------------------
 
-    explicit RedBlackNode(_KeyType _key)
+    explicit RedBlackNode(_KeyType _key) _NOEXCEPT
             : key(_key), left(NULL), right(NULL), color(RED), /* size(0),*/ parent(NULL)
     {};
 
-    RedBlackNode(_KeyType _key, bool _color)
+    RedBlackNode(_KeyType _key, bool _color) _NOEXCEPT
             : key(_key), color(_color), left(NULL), right(NULL), parent(NULL)
     {}
 
-    RedBlackNode(const node_type& other)
+    RedBlackNode(const node_type& other) _NOEXCEPT
             : key(other.key), color(other.color), left(other.left), right(other.right), parent(other.parent)
     {}
 
     // if Successor doesn't exist, then return NULL.
-    node_pointer getSuccessor()
+    node_pointer getSuccessor() _NOEXCEPT
     {
         // Case 1.
         if (this->right != NULL)
@@ -428,12 +428,7 @@ struct RedBlackNode
     }
 
     // if Predecessor doesn't exist, then return NULL.
-     /**
-     * @param first hello
-     * @return something
-     * @exception warn!
-     */
-    node_pointer getPredecessor()
+    node_pointer getPredecessor() _NOEXCEPT
     {
         // Case 1.
         if (this->left != NULL)
@@ -596,7 +591,7 @@ private:
         this->__deallocate_single_node(p);
     }
 
-    int __compare_value(const key_type &lhs, const key_type &rhs) const
+    int __compare_value(const key_type &lhs, const key_type &rhs) const _NOEXCEPT
     {
         if (m_Value_compare(lhs, rhs) == true) { // lhs < rhs
             return 1;
@@ -607,7 +602,7 @@ private:
     }
 
     // color is black if node is null.
-    bool __isRed(node_pointer x) const
+    bool __isRed(node_pointer x) const _NOEXCEPT
     {
         if (x == NULL) return false; // null node is black.
         return (x->color == RED);
@@ -618,24 +613,21 @@ private:
 // ------------------------------------------------------------
 public:
 
-    iterator begin()
+    iterator begin() _NOEXCEPT
     {
-        if (isEmpty()) throw std::runtime_error("calls begin() with empty symbol table");
         node_pointer t = __min(m_Root);
         return iterator(t);
     }
 
-    const_iterator begin() const
+    const_iterator begin() const _NOEXCEPT
     {
-        if (isEmpty()) throw std::runtime_error("calls begin() with empty symbol table");
         node_pointer t = __min(m_Root);
         return const_iterator(t);
     }
 
     // this returns address of last node. (=Largest node)
-    node_pointer getLastNode()
+    node_pointer getLastNode() _NOEXCEPT
     {
-        if (isEmpty()) throw std::runtime_error("getLastNode() with empty symbol table");
         node_pointer t = __max(m_Root);
         return t;
     }
@@ -643,27 +635,27 @@ public:
     // * -----------------------------------------------------------------
     // * iterator(NULL)과 iterator(end())를 구분하기 위함.
     // * --end()는 마지막 노드를 반환하기 떄문.
-    iterator end()
+    iterator end() _NOEXCEPT
     { return iterator(NULL, getLastNode()); }
 
-    const_iterator end() const
+    const_iterator end() const _NOEXCEPT
     { return const_iterator(NULL, getLastNode()); }
     // * -----------------------------------------------------------------
 
     // return true is tree is empty
-    bool isEmpty() const
+    bool isEmpty() const _NOEXCEPT
     {
         return (m_Root == NULL);
     }
 
     // find node, which contains target key.
-    node_pointer getNode(const key_type& target_key) const
+    node_pointer getNode(const key_type& target_key) const _NOEXCEPT
     {
         return __getNode(m_Root, target_key);
     }
 
     // if key exist, then return pointer to the key
-    key_type*  getAddressOfKey(const key_type& target_key) const
+    key_type*  getAddressOfKey(const key_type& target_key) const _NOEXCEPT
     {
         node_pointer ptr = getNode(target_key);
 
@@ -671,22 +663,56 @@ public:
         else                return &(ptr->key);
     }
 
-
-private:
     // target_key 보다 작거나 같은 값 중 가장 가까운 값.
-    node_pointer __getLowerBound(node_pointer curr, const key_type& target_key) const
+    node_pointer getLowerBoundNode(const key_type& target_key) const _NOEXCEPT
     {
+        if (m_Root == NULL) {
+            return NULL;
+        }
+        node_pointer nearNode = __getClosestNode(m_Root, target_key);
+        const int cmp = __compare_value(nearNode->key, target_key);
 
+        if (cmp < 0) { // lhs > rhs, 즉 nearNode 가 targetKey 보다 크다.
+            return nearNode->getPredecessor();
+        } else { // lhs <= rhs, 즉 nearNode 가 targetKey 보다 작거나 같다.
+            return nearNode;
+        }
     }
 
     // target_key 보다 큰 값 중 가장 가까운 값
-    node_pointer __getUpperBound(node_pointer curr, const key_type& target_key) const
+    node_pointer getUpperBoundNode(const key_type& target_key) const _NOEXCEPT
     {
+        if (m_Root == NULL) {
+            return NULL;
+        }
+        node_pointer nearNode = __getClosestNode(m_Root, target_key);
+        const int cmp = __compare_value(nearNode->key, target_key);
 
+        if (cmp < 0) { // lhs > rhs, 즉 nearNode 가 targetKey 보다 크다.
+            return nearNode;
+        } else { // lhs <= rhs, 즉 nearNode 가 targetKey 보다 작거나 같다.
+            return nearNode->getSuccessor();
+        }
+    }
+
+
+private:
+    // 찾고자 하는 key 값에 근접한 노드의 주소 반환. 다만 key보다 큰지 작은지는 추가 검사 필요.
+    node_pointer __getClosestNode(node_pointer curr, const key_type& target_key) const _NOEXCEPT
+    {
+        while (curr != NULL)
+        {
+            int cmp = __compare_value(curr->key, target_key);
+
+            if        ((cmp < 0) && (curr->left != NULL))    curr = curr->left;
+            else if   ((cmp > 0) && (curr->right != NULL))   curr = curr->right;
+            else       break;
+        }
+        return curr;
     }
 
     // because std::less only returns true or false, we need to handle equal value.
-    node_pointer __getNode(node_pointer curr, const key_type& target_key) const
+    node_pointer __getNode(node_pointer curr, const key_type& target_key) const _NOEXCEPT
     {
         while (curr != NULL)
         {
@@ -704,18 +730,18 @@ private:
 // ------------------------------------------------------------
 
 public:
-    size_type size() const
+    size_type size() const _NOEXCEPT
     {
         return (std::distance(begin(), end()));
     }
 
-    size_type max_size() const
+    size_type max_size() const _NOEXCEPT
     {
         return (std::numeric_limits<difference_type>::max());
     }
 
     // swap data with another red black tree
-    void swap(tree_type& other)
+    void swap(tree_type& other) _NOEXCEPT
     {
         FT::swap(this->m_Root, other.m_Root);
         FT::swap(this->m_Value_compare, other.m_Value_compare);
@@ -723,7 +749,7 @@ public:
 
 
     // Does this symbol table contain the given key?
-    bool contains(const key_type& key) const
+    bool contains(const key_type& key) const _NOEXCEPT
     {
         return (getNode(key) != NULL);
     }
@@ -977,12 +1003,7 @@ private:
 
 
     // flip the colors of a node and its two children
-     /**
-     * @param first hello
-     * @return something
-     * @exception warn!
-     */
-    void __flipColors(node_pointer h)
+    void __flipColors(node_pointer h) _NOEXCEPT
     {
         h->color = !h->color;
         h->left->color = !h->left->color;
@@ -990,7 +1011,7 @@ private:
     }
 
     // make a right-leaning link lean to the left
-    node_pointer __rotateLeft(node_pointer h)
+    node_pointer __rotateLeft(node_pointer h) _NOEXCEPT
     {
         node_pointer new_parent = h->right;
         h->right = new_parent->left;
@@ -1011,7 +1032,7 @@ private:
     }
 
     // make a left-leaning link lean to the right
-    node_pointer __rotateRight(node_pointer h)
+    node_pointer __rotateRight(node_pointer h) _NOEXCEPT
     {
         node_pointer new_parent = h->left;
         h->left = new_parent->right;
@@ -1036,7 +1057,7 @@ private:
     // make h.left or one of its children red.
     // Ref 1 : http://www.teachsolaisgames.com/articles/balanced_left_leaning.html
     // Ref 2 : https://sedgewick.io/wp-content/themes/sedgewick/papers/2008LLRB.pdf
-    node_pointer __moveRedLeft(node_pointer h)
+    node_pointer __moveRedLeft(node_pointer h) _NOEXCEPT
     {
         // If both children are black, we turn these three nodes into a
         // Temporary 4-node by applying a color dlip
@@ -1079,7 +1100,7 @@ private:
     // Restore red-black tree invariant. ( * Same Logic we used in __put function )
     // As we recurse down the tree, the code will leave right-leaning red nodes and unbalanced 4-nodes.
     // These rule violations will be repaired when recursing back out of the tree by the FixUp function.
-    node_pointer __fixUp(node_pointer h)
+    node_pointer __fixUp(node_pointer h) _NOEXCEPT
     {
         // 우리가 이미 재귀에서 return으로 FixUp을 호출하고 있기 때문에, 재귀적으로 호출할 필요가 없음.
 
@@ -1109,17 +1130,29 @@ private:
     // This replacement key is found with __min function
     // by starting at the node's right child, then traversing left until we reach a leaf node.
     // The contents of that leaf node can then be used to replace the value being deleted.
-    node_pointer __min(node_pointer x)
+    node_pointer __min(node_pointer x) _NOEXCEPT
     {
         if (x->left == NULL) { return x; }
         else                 { return __min(x->left); }
     }
 
-    node_pointer __max(node_pointer x)
+    node_pointer __max(node_pointer x) _NOEXCEPT
     {
         if (x->right == NULL) { return x; }
         else                  { return __max(x->right); }
     }
+
+
+
+
+
+
+
+
+// * 여기서부터는 테스트 후 삭제할 부분 입니다.
+// * ---------------------------------------------------------------------------------------------------------------
+// * ---------------------------------------------------------------------------------------------------------------
+
 
 private:
     // 아래 friend 함수는 class의 멤버함수가 아니다. 따라서 포함되지 않는다.
@@ -1128,18 +1161,6 @@ private:
     friend void printTree(const LeftLeaningRedBlack<U>& tree);
 
 };
-
-
-
-
-
-
-
-
-
-
-
-
 
 template <typename KeyType>
 void _printWithColor(const KeyType& data, const std::string& color = PRINT_RESET)
@@ -1221,6 +1242,20 @@ void printTree(const LeftLeaningRedBlack<KeyType> &tree)
 }
 
 
- FT_END_PRIVATE_NAMESPACE
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+FT_END_PRIVATE_NAMESPACE
 #endif //FT_CONTAINER___LEFT_LEANING_REDBLACK_HPP

@@ -31,8 +31,8 @@
 
 // @ namespace for internal helper function call ( not for API )
 //   - you can access helper functions by calling ft::_PRIVATE::foo()
-//#define _PRIVATE                        __this_is_hidden_namespace_for_internal_helper_function__
-#define _PRIVATE                        _
+
+#define _PRIVATE                        ___hidden_namespace___
 #define FT_BEGIN_PRIVATE_NAMESPACE      FT_BEGIN_GLOBAL_NAMESPACE namespace _PRIVATE {
 #define FT_END_PRIVATE_NAMESPACE        } }
 
