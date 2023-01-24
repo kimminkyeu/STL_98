@@ -27,7 +27,7 @@ bool equal( InputIt1 first1, InputIt1 last1,
             return false;
     }
     return true;
-};
+}
 
 
 // * (2) std::equal() : [ Defined in header <algorithm> ]
@@ -93,28 +93,106 @@ void swap(T& x, T& y)
 
 // * (4) std::pair : [ Defined in header <utility> ]
 // https://en.cppreference.com/w/cpp/utility/pair
-template <class T1, class T2>
-struct pair
+template <class _T1, class _T2>
+struct FT_TEMPLATE_VIS pair
 {
-    typedef T1  first_type;
-    typedef T2  second_type;
+    typedef _T1 first_type;
+    typedef _T2 second_type;
 
-    T1  first;
-    T2  second;
+    _T1 first;
+    _T2 second;
 
-    pair(const T1& _t1, const T2& _t2)
-        : first(_t1), second(_t2)
+    FT_HIDE_FROM_ABI
+    pair()
+        : first(), second()
     {}
+
+    FT_HIDE_FROM_ABI
+    pair(_T1 const& __t1, _T2 const& __t2)
+        : first(__t1), second(__t2)
+    {}
+
+    template <class _U1, class _U2>
+    FT_HIDE_FROM_ABI
+    pair(const pair<_U1, _U2>& __p)
+        : first(__p.first), second(__p.second)
+    {}
+
+    FT_HIDE_FROM_ABI
+    pair& operator=(pair const& __p)
+    {
+        first = __p.first;
+        second = __p.second;
+        return *this;
+    }
+
+    template<class U1, class U2>
+    FT_HIDE_FROM_ABI
+    pair& operator=(const pair<U1, U2>& p)
+    {
+        first = p.first;
+        second = p.second;
+        return *this;
+    }
 };
+
+template <class _T1, class _T2>
+inline FT_HIDE_FROM_ABI
+bool
+operator==(const pair<_T1,_T2>& __x, const pair<_T1,_T2>& __y)
+{
+    return __x.first == __y.first && __x.second == __y.second;
+}
+
+template <class _T1, class _T2>
+inline FT_HIDE_FROM_ABI
+bool
+operator!=(const pair<_T1,_T2>& __x, const pair<_T1,_T2>& __y)
+{
+    return !(__x == __y);
+}
+
+template <class _T1, class _T2>
+inline FT_HIDE_FROM_ABI
+bool
+operator< (const pair<_T1,_T2>& __x, const pair<_T1,_T2>& __y)
+{
+    return __x.first < __y.first || (!(__y.first < __x.first) && __x.second < __y.second);
+}
+
+template <class _T1, class _T2>
+inline FT_HIDE_FROM_ABI
+bool
+operator> (const pair<_T1,_T2>& __x, const pair<_T1,_T2>& __y)
+{
+    return __y < __x;
+}
+
+template <class _T1, class _T2>
+inline FT_HIDE_FROM_ABI
+bool
+operator>=(const pair<_T1,_T2>& __x, const pair<_T1,_T2>& __y)
+{
+    return !(__x < __y);
+}
+
+template <class _T1, class _T2>
+inline FT_HIDE_FROM_ABI
+bool
+operator<=(const pair<_T1,_T2>& __x, const pair<_T1,_T2>& __y)
+{
+    return !(__y < __x);
+}
+
 
 // * map의 경우 pair<const K, V>를 사용하기 때문에,
 // * K를 복사하지 못한다. 따라서 이 경우에 한해 복사를 어떻게 할지 알려줘야 한다.
 // * 그래서 아래와 같이 map에 대해 특수 경우를 따로 작성하였다.
+/*
 template <class T1, class T2>
 struct pair<const T1, T2>
 {
     typedef pair<const T1, T2>  pair_type;
-
     typedef T1  first_type;
     typedef T2  second_type;
 
@@ -125,16 +203,23 @@ struct pair<const T1, T2>
         : first(_t1), second(_t2)
     {}
 
+    template <class U1, class U2>
+    explicit pair(const pair<U1, U2>& other_pair)
+        : first(other_pair.first), second(other_pair.second)
+    {}
+
     pair_type& operator=(const pair_type& other)
     {
         this->second = other.second; // second 만 복사 진행.
         return (*this);
     }
 };
+ */
 
 // * (5) std::make_pair : [ Defined in header <utility> ]
 // https://en.cppreference.com/w/cpp/utility/pair/make_pair
 template <class T1, class T2>
+inline FT_HIDE_FROM_ABI
 pair<T1, T2> make_pair( T1 t, T2 u )
 {
     return (pair<T1, T2>(t, u));

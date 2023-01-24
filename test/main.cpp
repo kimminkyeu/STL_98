@@ -16,28 +16,56 @@
 
 // #define TEST FT::_PRIVATE
 #define TEST FT
-#define CONTAINER TEST::map
+
+#define CONTAINER   FT::map<int, std::string>
+#define ITERATOR    CONTAINER::iterator
 
 int		main()
 {
-    FT::map<int, int> m;
-    FT::map<int, int>::iterator itr = m.begin();
-    m.max_size();
-    m[3] = 5;
-    m.at(3) = 4;
+    FT::map<int, std::string> m;
 
-    FT::map<std::string, std::string> dict;
+    std::cout << PRINT_BLUE << "------------------------------" << PRINT_RESET << std::endl;
+    std::cout << PRINT_BLUE << "|     Testing insertion      |" << PRINT_RESET << std::endl;
+    std::cout << PRINT_BLUE << "------------------------------" << PRINT_RESET << std::endl;
+    m[0] = "a";
+    m[1] = "b";
+    m[2] = "c";
+//    m.insert(CONTAINER::value_type(3, "hello"));
+//    m.insert(FT::make_pair(3, "hello"));
+//    CONTAINER::value_type pair_type = CONTAINER::value_type(FT::make_pair(3, "hi"));
+    m.insert(FT::make_pair(3, "hi"));
 
-    auto itr3 = dict.begin();
-    FT::map<std::string, std::string>::iterator itr2 = dict.begin();
-    itr2->second = "hi";
+    std::cout << PRINT_BLUE << "------------------------------" << PRINT_RESET << std::endl;
+    std::cout << PRINT_BLUE << "|      Testing find()       |" << PRINT_RESET << std::endl;
+    std::cout << PRINT_BLUE << "------------------------------" << PRINT_RESET << std::endl;
 
-    itr2 = --(dict.end());
-    itr2->second = "hello";
+    std::cout << "0 : " << m.find(0)->second << std::endl;
+    std::cout << "1 : " << m.find(1)->second << std::endl;
+    std::cout << "2 : " << m.find(2)->second << std::endl;
+    std::cout << "size of map : " << m.size() << std::endl;
 
-//    FT::map<std::string, std::string>::const_iterator const_itr2 = dict.begin();
-//    const_itr2->second = "bew";
 
+
+
+
+    std::cout << PRINT_BLUE << "------------------------------" << PRINT_RESET << std::endl;
+    std::cout << PRINT_BLUE << "|      Testing erase()       |" << PRINT_RESET << std::endl;
+    std::cout << PRINT_BLUE << "------------------------------" << PRINT_RESET << std::endl;
+
+    m.erase(0);
+
+    std::cout << "data in map" << std::endl;
+    for (auto & itr : m) { std::cout << itr.second << " "; };
+    std::cout << "\n\n";
+
+    m.erase(1);
+    m.erase(3);
+
+    std::cout << "data in map" << std::endl;
+    for (auto & itr : m) { std::cout << itr.second << " "; };
+    std::cout << "\n\n";
+
+    std::cout << "size of map : " << m.size() << std::endl;
 
 
 	return (0);

@@ -16,7 +16,7 @@ FT_BEGIN_PRIVATE_NAMESPACE
 
 // ---------------------------------------------------------------
 // |                                                             |
-// |               map_iterator_implementation                   |
+// |                   map_iterator_implementation               |
 // |                                                             |
 // ---------------------------------------------------------------
 // * [map_iterator를 구현한 이유]
@@ -258,6 +258,7 @@ private: // * 여기서 pair type 정렬을 위한 value_compare를 넣어준다
     typedef FT::map<Key, Value, Compare, Allocator>                                   _map_type;
     typedef typename _map_base::node_pointer                                          _node_pointer;
     typedef typename _map_base::node_type                                             _node_type;
+    typedef typename _map_base::iterator                                              _node_iterator;
 
 public:
     typedef _PRIVATE::__map_iterator<value_type, _node_type>                         iterator;
@@ -431,13 +432,13 @@ public:
 
         if (node_ptr != NULL) // if node already exists.
         {
-            return FT::make_pair( iterator( _map_base::iterator(node_ptr) ), false );
+            return FT::make_pair( iterator( _node_iterator(node_ptr) ), false );
         }
         else // if pair doesn't exist, insert data.
         {
             __tree__.put(v);
             node_ptr = __tree__.getNode(v);
-            return FT::make_pair( iterator( _map_base::iterator(node_ptr) ), true );
+            return FT::make_pair( iterator( _node_iterator(node_ptr) ), true );
         }
     }
 
@@ -483,7 +484,7 @@ public:
     FT_HIDE_FROM_ABI
     size_type erase( const Key& key ) _NOEXCEPT
     {
-        __tree__.erase(key);
+        return __tree__.erase( value_type (key, mapped_type()) );
     }
 
     // Exchanges the content of the container by the content of x, which is
@@ -503,7 +504,7 @@ public:
     size_type count( const Key& _key ) const _NOEXCEPT
     {
         if (__tree__.contains(_key))     return 1;
-        else                                  return 0;
+        else                             return 0;
     }
 
     // Returns an Iterator to an element with key equivalent to _key.
@@ -512,14 +513,14 @@ public:
     iterator find( const Key& _key ) _NOEXCEPT
     {
         _node_pointer node_ptr = __tree__.getNode(value_type(_key, mapped_type()));
-        return iterator( _map_base::iterator(node_ptr) );
+        return iterator( _node_iterator(node_ptr) );
     }
 
     FT_HIDE_FROM_ABI
     const_iterator find( const Key& _key ) const _NOEXCEPT
     {
         _node_pointer node_ptr = __tree__.getNode(value_type(_key, mapped_type()));
-        return const_iterator( _map_base::iterator(node_ptr) );
+        return const_iterator( _node_iterator(node_ptr) );
     }
 
     FT_HIDE_FROM_ABI
@@ -544,7 +545,7 @@ public:
             // If no such element is found, a past-the-end iterator (see end()) is returned.
             return (this->end());
         } else {
-            return iterator( _map_base::iterator(node_ptr) );
+            return iterator( _node_iterator(node_ptr) );
         }
     }
 
@@ -558,7 +559,7 @@ public:
             // If no such element is found, a past-the-end iterator (see end()) is returned.
             return (this->end());
         } else {
-            return const_iterator( _map_base::iterator(node_ptr) );
+            return const_iterator( _node_iterator(node_ptr) );
         }
     }
 
@@ -570,7 +571,7 @@ public:
             // If no such element is found, a past-the-end iterator (see end()) is returned.
             return (this->end());
         } else {
-            return iterator( _map_base::iterator(node_ptr) );
+            return iterator( _node_iterator(node_ptr) );
         }
     }
 
@@ -582,7 +583,7 @@ public:
             // If no such element is found, a past-the-end iterator (see end()) is returned.
             return (this->end());
         } else {
-            return const_iterator( _map_base::iterator(node_ptr) );
+            return const_iterator( _node_iterator(node_ptr) );
         }
     }
 

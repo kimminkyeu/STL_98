@@ -67,10 +67,10 @@ public: // constructor & destructor
             : m_Current(_iterator_in.base()), m_LastNode(_iterator_in.m_LastNode)
     {}
 
-
-    // * end()를 호출할 경우에만 두번째 파라미터에 last_node의 정보가 들어온다.
-    // * end()를 호출한게 아니라면, 두번재 파라미터는 NULL이 된다.
-    explicit __tree_iterator(const pointer& _node_pointer_in, const pointer& _last_node_hint = NULL) // Node pointer to iterator casting.
+    // * Node pointer to iterator casting.
+    // end()를 호출할 경우에만 두번째 파라미터에 last_node의 정보가 들어온다.
+    // end()를 호출한게 아니라면, 두번재 파라미터는 NULL이 된다.
+    explicit __tree_iterator(const pointer& _node_pointer_in, const pointer& _last_node_hint = NULL)
         : m_Current(_node_pointer_in), m_LastNode(_last_node_hint)
     {}
 
@@ -133,6 +133,13 @@ public: // operator:
         }
         return *this;
     }
+
+    // * ---------------------------------------------------------
+    // * tree_iterator에서 tree_const_iterator로 캐스팅할 때
+    // * 복사 생성자 부분의 base를 사용하기 위해 friend로 선언하였습니다.
+    template<typename, typename>
+    FT_HIDE_FROM_ABI friend class __tree_const_iterator;
+    // * ---------------------------------------------------------
 };
 
 // @ forward iterator requirements.
@@ -180,6 +187,7 @@ public:
 protected: // data member
 // * --------------------------------------------------------------------
     const_pointer m_Current; // pointer to a single node.
+    pointer m_LastNode;    // pointer to the last node of tree. --> --end() 할 때 필요함.
 // * --------------------------------------------------------------------
 
 public: // constructor & destructor
@@ -193,17 +201,26 @@ public: // constructor & destructor
 
     // constructor Wrapping
     __tree_const_iterator(const __tree_const_iterator& _const_iterator_in)
-            : m_Current(_const_iterator_in)
+            : m_Current(_const_iterator_in.base()), m_LastNode(_const_iterator_in.m_LastNode)
     {}
 
+    // * Node pointer to iterator casting.
+    // end()를 호출할 경우에만 두번째 파라미터에 last_node의 정보가 들어온다.
+    // end()를 호출한게 아니라면, 두번재 파라미터는 NULL이 된다.
+    explicit __tree_const_iterator(const pointer& _node_pointer_in, const pointer& _last_node_hint = NULL)
+            : m_Current(_node_pointer_in), m_LastNode(_last_node_hint)
+    {}
+
+    // * iterator를 const_iterator로 캐스팅 할 경우에 사용된다.
+    template<typename Key, typename NodeType>
     explicit __tree_const_iterator(const __tree_iterator<_Key, _NodeType>& _iterator_in)
-            : m_Current(_iterator_in)
+            : m_Current(_iterator_in.base()), m_LastNode(_iterator_in.m_LastNode)
     {}
 
-    // copy constructor (used at casting)
+    // 다른 key type을 가리키는 iterator간의 casting. (ex. 서로 다른 type을 node의 KEY로 가진 tree)
     template<typename _Other_Key>
     explicit __tree_const_iterator(const __tree_const_iterator<_Other_Key, _NodeType>& _other_iterator)
-            : m_Current(_other_iterator.base()) // wrapper가 감싸고 있는 부분을 깊은 복사하는 것.
+            : m_Current(_other_iterator.base()), m_LastNode(_other_iterator.m_LastNode)
     {}
 
 public: // operator:
@@ -280,7 +297,7 @@ bool operator!=(const __tree_const_iterator<_IteratorL, _NodeType>& __lhs,
 // wrapper class to handle all the node allocating, rebind, etc...
 // 주어진 T를 각 tree에 맞는 node로 묶어서 하나의 단위로 allocate.
 
-template <class T, class _NodeType, class Allocator>
+template <class _KeyType, class _NodeType, class Allocator>
 class Tree_node_alloc_base
 {
 protected: // typedef and namespace scope
@@ -291,6 +308,9 @@ protected: // typedef and namespace scope
 
     // @ using typename of rebound allocator's typedef
     typedef _NodeType                                           node_type;
+    typedef _KeyType                                            key_type;
+    typedef key_type*                                           key_pointer;
+
     typedef typename node_allocator_type::size_type		        size_type;
     typedef typename node_allocator_type::pointer		        pointer;
     typedef typename node_allocator_type::const_pointer		    const_pointer;
@@ -318,20 +338,42 @@ protected:
         }
     }
 
+    FT_HIDE_FROM_ABI
     void __construct_node_at(pointer _address_of_node) {
         // [ placement new ] : construct objects in pre-allocated storage.
         new (_address_of_node) node_type();
     }
 
+    FT_HIDE_FROM_ABI
      void __construct_node_by_value_at(pointer _address_of_node, const node_type& _value) {
         // [ placement new ] : construct objects in pre-allocated storage.
         new (_address_of_node) node_type(_value);
     }
 
-    void __destroy_address_of(pointer _address_of_node) {
+    FT_HIDE_FROM_ABI
+    void __destroy_node_at(pointer _address_of_node) {
         _address_of_node->node_type::~node_type(); // directly call destructor.
     }
 
+// ! -------------------------------------------------------------------------------------
+// ! [ 매우 중요한 함수들 ]
+// !    - map은 key가 pair<const T, U> 이기 때문에, 이미 만들어진 key에 값을 복사할 수 없다.
+// !    - 따라서 일괄적으로 key를 소멸, 재생성해야 한다.
+// !                   Ex) [ node_ptr->key = other_key ] 는 ft::map에서 컴파일되지 않는다.
+
+    FT_HIDE_FROM_ABI
+    void __construct_key_by_value_at(key_pointer _address_of_key, const key_type& _key) {
+        new (_address_of_key) key_type(_key); // call constructor
+    }
+
+    FT_HIDE_FROM_ABI
+    void __destroy_key_at(key_pointer _address_of_key) {
+        _address_of_key->key_type::~key_type(); // call destructor
+    }
+// ! --------------------------------------------------------------------------------------
+
+
+protected:
     Tree_node_alloc_base()
         : __m_Data_allocator(node_allocator_type())
     {}
@@ -405,7 +447,7 @@ struct RedBlackNode
     {}
 
     // if Successor doesn't exist, then return NULL.
-    node_pointer getSuccessor() _NOEXCEPT
+    node_pointer getSuccessor() const _NOEXCEPT
     {
         // Case 1.
         if (this->right != NULL)
@@ -418,7 +460,7 @@ struct RedBlackNode
         }
         // Case 2.
         node_pointer above = this->parent;
-        node_pointer me = this;
+        const_node_pointer me = this;
         while (above != NULL && me == above->right) // go up if I'm right node of parent.
         {
             me = above;
@@ -428,7 +470,7 @@ struct RedBlackNode
     }
 
     // if Predecessor doesn't exist, then return NULL.
-    node_pointer getPredecessor() _NOEXCEPT
+    node_pointer getPredecessor() const _NOEXCEPT
     {
         // Case 1.
         if (this->left != NULL)
@@ -441,7 +483,7 @@ struct RedBlackNode
         }
         // Case 2.
         node_pointer above = this->parent;
-        node_pointer me = this;
+        const_node_pointer me = this;
         while (above != NULL && me == above->left) // go up if I'm left node of parent.
         {
             me = above;
@@ -584,10 +626,18 @@ private:
         return address_of_new_node;
     }
 
-    // ! Node를 destory 하지만, Key는 destory하지 않는다. 이게 중요하다.
+    // ! Re-construct key_type object with given value.
+    // ! 이 함수는 key_type을 pair<const T, U> 로 사용하는 ft::map 을 위하여 추가하였습니다.
+    // ! 이미 존재하는 key instance에 다른 key의 값을 대입할 수 없기 때문입니다.
+    void __reconstruct_key_by_value_at(key_type* address_of_key_to_change, const key_type& other_key)
+    {
+        this->__destroy_key_at(address_of_key_to_change);
+        this->__construct_key_by_value_at(address_of_key_to_change, other_key);
+    }
+
     void __destroy_and_deallocate_RbNode(node_pointer p)
     {
-        this->__destroy_address_of(p);
+        this->__destroy_node_at(p);
         this->__deallocate_single_node(p);
     }
 
@@ -626,7 +676,7 @@ public:
     }
 
     // this returns address of last node. (=Largest node)
-    node_pointer getLastNode() _NOEXCEPT
+    node_pointer getLastNode() const _NOEXCEPT
     {
         node_pointer t = __max(m_Root);
         return t;
@@ -770,10 +820,7 @@ public:
     {
         while (start != end)
         {
-//            put(*start);
             put(start->key);
-//            key_type key = *start;
-//            put(key);
             ++start;
         }
     }
@@ -799,10 +846,7 @@ private:
             curr->right->parent = curr;
         }
         else                {
-            // ! copy 를 하면 map에서 작동 안함.
-            // 왜냐면 pair<const Key, Value> 이기 때문에...
-            // const 어떻게 copy할 건데?
-            curr->key   = target_key;
+            // if key exist, the element is not inserted
         }
 
         // ----------------------------------------
@@ -908,24 +952,23 @@ public:
     }
 
     // Removes the specified key and its associated value from this symbol table
-    // (if the key is in this symbol table).
-    // * C++98 versions of Set and Map's erase functions return no value.
-    void erase(const key_type& key)
+    // Returns number of elements erased (0 or 1)
+    size_type erase(const key_type& key)
     {
-        if (!contains(key)) return;
+        if (!contains(key)) { return 0; }
 
         m_Root = __erase(m_Root, key);
 
         // Assuming we have not deleted the last node from the tree, we
         // need to force the root to be a black node to conform with the rules of a red-black tree.
         if (!isEmpty()) { m_Root->color = BLACK; }
+        return 1;
     }
 
 private:
     node_pointer __erase(node_pointer curr, const key_type& key)
     {
         if (__compare_value(curr->key, key) < 0)
-        // ! if key you want do delete is on the left <--
         {
             // If pNode and pNode->pLeft are black, we may need to
             // move pRight to become the left child if a deletion
@@ -971,12 +1014,15 @@ private:
                 // held the key/value pair we just moved.
                 if (__compare_value(curr->key, key) == 0) // if found key
                 {
-                    // simple swap.
-                    // * 후속자 노드를 찾아서 그 값을 복사. (자식이 없을 경우엔 자기 자신 복사)
-                    curr->key = (__min(curr->right))->key; // (1) copy successor to current key
-                    curr->right = __eraseMin(curr->right); // (2) delete successor node.
+                    // curr->key = (__min(curr->right))->key; --> 왼쪽 코드는 map에서 컴파일 되지 않습니다.
+                    // 따라서 아래와 같이 key만 재생성하는 함수를 사용하였습니다.
+                    // (1) copy successor to current key
+                    const key_type successor_key = (__min(curr->right))->key;
+                    __reconstruct_key_by_value_at(&(curr->key), successor_key);
+                    // (2) delete successor node.
+                    curr->right = __eraseMin(curr->right);
                 }
-                else // ! if key you want do delete is on the right -->
+                else
                 {
                     curr->right = __erase(curr->right, key);
                 }
@@ -1130,16 +1176,20 @@ private:
     // This replacement key is found with __min function
     // by starting at the node's right child, then traversing left until we reach a leaf node.
     // The contents of that leaf node can then be used to replace the value being deleted.
-    node_pointer __min(node_pointer x) _NOEXCEPT
+    node_pointer __min(node_pointer x) const _NOEXCEPT
     {
-        if (x->left == NULL) { return x; }
-        else                 { return __min(x->left); }
+//        assert(x != NULL && "x is null");
+        if       (x == NULL)        { return NULL; }
+        else if  (x->left == NULL)  { return x; }
+        else                        { return __min(x->left); }
     }
 
-    node_pointer __max(node_pointer x) _NOEXCEPT
+    node_pointer __max(node_pointer x) const _NOEXCEPT
     {
-        if (x->right == NULL) { return x; }
-        else                  { return __max(x->right); }
+//        assert(x != NULL && "x is null");
+        if       (x == NULL)        { return NULL; }
+        else if  (x->right == NULL) { return x; }
+        else                        { return __max(x->right); }
     }
 
 
