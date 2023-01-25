@@ -6,11 +6,13 @@
 #ifndef FT_CONTAINER_MAP_HPP
 #define FT_CONTAINER_MAP_HPP
 
+#include <iterator>
 #include <memory>
 #include <functional> // for std::less
 #include "iterator.hpp"
 #include "__Left_Leaning_RedBlack.hpp"
 #include "__config.hpp"
+#include "vector.hpp"
 
 FT_BEGIN_PRIVATE_NAMESPACE
 
@@ -128,10 +130,8 @@ public:
     typedef std::bidirectional_iterator_tag                      iterator_category;
     typedef typename _node_type::key_type                        value_type;            // pair
     typedef typename _TreeConstIterator::difference_type         difference_type;
-    typedef typename _node_type::key_type_reference              reference;             // pair &
-    typedef typename _node_type::const_key_type_reference        const_reference;       // const pair &
-    typedef typename _node_type::key_type_pointer                pointer;               // pair *
-    typedef typename _node_type::const_key_type_pointer          const_pointer;         // const pair *
+    typedef typename _node_type::const_key_type_reference        reference;       // const pair &
+    typedef typename _node_type::const_key_type_pointer          pointer;         // const pair *
 
 public:
     FT_HIDE_FROM_ABI
@@ -154,12 +154,12 @@ public:
     }
 
     FT_HIDE_FROM_ABI
-    const_reference operator*() const
-    { return (__i_->key); }
+    reference operator*() const
+    { return reference(__i_->key); }
 
     FT_HIDE_FROM_ABI
-    const_pointer operator->() const
-    { return &(__i_->key); }
+    pointer operator->() const
+    { return pointer(&(__i_->key)); }
 
     FT_HIDE_FROM_ABI
     __map_const_iterator& operator++() {++__i_; return *this;}
@@ -343,11 +343,11 @@ public:
 
     FT_HIDE_FROM_ABI
     iterator end() _NOEXCEPT
-    { return __tree__.end(); }
+    { return iterator(__tree__.end()); }
 
     FT_HIDE_FROM_ABI
     const_iterator end() const _NOEXCEPT
-    { return __tree__.end(); }
+    { return const_iterator(__tree__.end()); }
 
     FT_HIDE_FROM_ABI
     reverse_iterator rbegin() _NOEXCEPT
@@ -480,14 +480,22 @@ public:
         __tree__.erase(*pos);
     }
 
+    // ! ----------------------------------------------------------------------------------
+    // ! 삭제 부분에서 트리 재구성으로 인해 iterator가 가리키는 주소가 바뀔 수 있다. itr++ 를 쓰면 안된다.
     FT_HIDE_FROM_ABI
     void erase( iterator first, iterator last ) _NOEXCEPT
     {
-        while (first != last)
-        {
-            __tree__.erase(*(first++));
+        size_type delCount = std::distance(first, last);
+        FT::vector<value_type> tmp;
+        tmp.reserve(delCount);
+        for (iterator itr = first; itr != last; ++itr) {
+            tmp.push_back(*itr); // 지울 key 값들을 전부 저장.
+        }
+        for (size_type i = 0; i < delCount; ++i) {
+            __tree__.erase(tmp[i]);
         }
     }
+    // ! ----------------------------------------------------------------------------------
 
     FT_HIDE_FROM_ABI
     size_type erase( const Key& key ) _NOEXCEPT

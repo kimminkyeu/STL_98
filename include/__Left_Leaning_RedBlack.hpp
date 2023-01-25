@@ -260,30 +260,39 @@ public: // operator:
     _const_iterator_type operator++(int) // same as iter++;
     {
         const_pointer tmp = m_Current;
-        // if (m_Current != NULL)
+        if (m_Current != NULL) {
             m_Current = m_Current->getSuccessor();
+        }
         return __tree_const_iterator(tmp);
     }
 
     _const_iterator_type& operator++() // same as ++iter;
     {
-        // if (m_Current != NULL)
+        if (m_Current != NULL) {
             m_Current = m_Current->getSuccessor();
+        }
         return *this;
     }
 
-    _const_iterator_type operator--(int)
+    _const_iterator_type operator--(int) // same as iter--;
     {
-        const_pointer tmp = m_Current;
-        // if (m_Current != NULL)
+        pointer tmp = m_Current;
+        if (m_Current != NULL) { // if NULL, then do nothing.
             m_Current = m_Current->getPredecessor();
+        }
         return __tree_const_iterator(tmp);
     }
 
-    _const_iterator_type& operator--()
+    // ! end()와 NULL을 어떻게 구분할 것인가?
+    // * end()일 경우에만 iterator에 m_last_node 정보가 들어온다.
+    // * 이를 통해 --iterator(NULL)과 --iterator(end())를 구분할 수 있다.
+    _const_iterator_type& operator--() // same as --iter;
     {
-        // if (m_Current != NULL)
+        if (m_Current != NULL) {
             m_Current = m_Current->getPredecessor();
+        } else if (m_LastNode != NULL) { // if end(), return last element.
+            m_Current = m_LastNode;
+        }
         return *this;
     }
 };
@@ -737,7 +746,7 @@ public:
         else                return &(ptr->key);
     }
 
-    // target_key 보다 작거나 같은 값 중 가장 가까운 값.
+    // target_key 보다 크거나 같은 값.
     node_pointer getLowerBoundNode(const key_type& target_key) const _NOEXCEPT
     {
         if (m_Root == NULL) {
@@ -746,10 +755,10 @@ public:
         node_pointer nearNode = __getClosestNode(m_Root, target_key);
         const int cmp = __compare_value(nearNode->key, target_key);
 
-        if (cmp < 0) { // lhs > rhs, 즉 nearNode 가 targetKey 보다 크다.
-            return nearNode->getPredecessor();
-        } else { // lhs <= rhs, 즉 nearNode 가 targetKey 보다 작거나 같다.
+        if (cmp <= 0) { // lhs >= rhs, 즉 nearNode 가 targetKey 보다 크거나 같다.
             return nearNode;
+        } else { // lhs < rhs, 즉 nearNode 가 targetKey 보다 작다.
+            return nearNode->getSuccessor();
         }
     }
 
@@ -815,7 +824,7 @@ public:
 
     size_type max_size() const _NOEXCEPT
     {
-        return (std::numeric_limits<difference_type>::max());
+        return (std::numeric_limits<size_type>::max() / sizeof(node_type));
     }
 
     // swap data with another red black tree
@@ -1230,95 +1239,82 @@ private:
 
 // * 여기서부터는 테스트 후 삭제할 부분 입니다.
 // * ---------------------------------------------------------------------------------------------------------------
+    // TODO:  Remove this functions later!!
 // * ---------------------------------------------------------------------------------------------------------------
+
+public:
+    void printTree()
+    {
+        std::cout << "\n";
+        std::cout << "--------------------------------------\n";
+        _printTree(m_Root, NULL,  false);
+        std::cout << "--------------------------------------\n";
+        std::cout << "\n";
+    }
 
 
 private:
-    // 아래 friend 함수는 class의 멤버함수가 아니다. 따라서 포함되지 않는다.
-    // TODO:  Remove this function later!!
-    template<typename U>
-    friend void printTree(const LeftLeaningRedBlack<U>& tree);
+    void _printWithColor(const key_type& data, const std::string& color = PRINT_RESET)
+    {
+        std::cout << " " << color << data.first << PRINT_RESET << std::endl;
+    }
 
+    struct Trunk {
+        Trunk *prev;
+        std::string str;
+
+        Trunk(Trunk *prev, std::string str) {
+            this->prev = prev;
+            this->str = str;
+        }
+    };
+    // 이진 트리의 분기를 인쇄하는 도우미 함수
+    void showTrunks(Trunk *p) {
+        if (p == nullptr) {
+            return;
+        }
+
+        showTrunks(p->prev);
+        std::cout << p->str;
+    }
+
+    void _printTree(node_pointer root, Trunk *prev, bool isLeft) {
+        if (root == nullptr) {
+            return;
+        }
+
+        std::string prev_str = "    ";
+        Trunk *trunk = new Trunk(prev, prev_str);
+
+        _printTree(root->right, trunk, true);
+
+        if (!prev) {
+            trunk->str = "———";
+        } else if (isLeft) {
+            trunk->str = ".———";
+            prev_str = "   |";
+        } else {
+            trunk->str = "`———";
+            prev->str = prev_str;
+        }
+
+        showTrunks(trunk);
+
+        if (root->color == RED)
+            _printWithColor(root->key, PRINT_RED);
+        else
+            _printWithColor(root->key);
+
+        if (prev) {
+            prev->str = prev_str;
+        }
+        trunk->str = "   |";
+
+        _printTree(root->left, trunk, false);
+    }
 };
 
-template <typename KeyType>
-void _printWithColor(const KeyType& data, const std::string& color = PRINT_RESET)
-{
-    std::cout << " " << color << data << PRINT_RESET << std::endl;
-}
 
-// TODO:  Remove this functions later!!
-struct Trunk
-{
-    Trunk *prev;
-    std::string str;
-
-    Trunk(Trunk *prev, std::string str)
-    {
-        this->prev = prev;
-        this->str = str;
-    }
-};
- // 이진 트리의 분기를 인쇄하는 도우미 함수
-void showTrunks(Trunk *p)
-{
-    if (p == nullptr) {
-        return;
-    }
-
-    showTrunks(p->prev);
-    std::cout << p->str;
-}
-
-template <typename KeyType, class Compare>
-void _printTree(const RedBlackNode<KeyType, Compare>* root, Trunk *prev, bool isLeft)
-{
-    if (root == nullptr) {
-        return;
-    }
-
-    std::string prev_str = "    ";
-    Trunk *trunk = new Trunk(prev, prev_str);
-
-    _printTree(root->right, trunk, true);
-
-    if (!prev) {
-        trunk->str = "———";
-    }
-    else if (isLeft)
-    {
-        trunk->str = ".———";
-        prev_str =   "   |";
-    }
-    else {
-        trunk->str = "`———";
-        prev->str = prev_str;
-    }
-
-    showTrunks(trunk);
-
-    if (root->color == RED)
-        _printWithColor(root->key, PRINT_RED);
-    else
-        _printWithColor(root->key);
-
-    if (prev) {
-        prev->str = prev_str;
-    }
-    trunk->str = "   |";
-
-    _printTree(root->left, trunk, false);
-}
-
-template <typename KeyType>
-void printTree(const LeftLeaningRedBlack<KeyType> &tree)
-{
-    std::cout << "\n";
-    std::cout << "--------------------------------------\n";
-    _printTree(tree.m_Root, NULL,  false);
-    std::cout << "--------------------------------------\n";
-    std::cout << "\n";
-}
 
 
 

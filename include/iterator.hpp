@@ -165,7 +165,8 @@ public: // constructor & destructor
 
 public: // operator
 
-    //. Because of explicit keyword on constructor, i added const_iterator cast operator. ( Type-casting [T*] to [const T*] )
+    // * Because of explicit keyword on constructor...
+    // * I added const_iterator cast operator. ( Type-casting [T*] to [const T*] )
     operator random_access_iterator<const value_type*, Container>()
     {
         return random_access_iterator<const value_type*, Container>(this->m_Current);
@@ -367,7 +368,7 @@ public: // constructor & destructor
 	pointer   operator->() const
     { return &(operator*()); }
 
-	_Self& operator++()
+	_Self& operator++() // same as ++data
     {
         --m_Current;
         return *this;

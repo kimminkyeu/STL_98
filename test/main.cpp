@@ -78,14 +78,6 @@ std::string	printPair(const T &iterator, bool nl = true, std::ostream &o = std::
 
 
 
-
-
-
-
-
-
-
-
 template <typename T_MAP>
 void	printSize(T_MAP const &mp, bool print_content = 1)
 {
@@ -102,13 +94,6 @@ void	printSize(T_MAP const &mp, bool print_content = 1)
 }
 
 
-
-
-
-
-
-#include <list>
-
 #define T1 float
 #define T2 foo<int>
 typedef _pair<const T1, T2> T3;
@@ -124,38 +109,38 @@ int		main(void)
 	TESTED_NAMESPACE::map<T1, T2>::reverse_iterator it(mp.rbegin());
 	TESTED_NAMESPACE::map<T1, T2>::const_reverse_iterator ite(mp.rbegin());
 	printSize(mp);
+	printPair(++ite);
+	printPair(ite++);
+	printPair(ite++);
+	printPair(++ite);
+
+
 	std::cout << "-------------------------------------------------" << std::endl;
-	// printPair(++ite);
-	// std::cout << "-------------------------------------------------" << std::endl;
-	// printPair(ite++);
-	// std::cout << "-------------------------------------------------" << std::endl;
-	// printPair(ite++);
-	// std::cout << "-------------------------------------------------" << std::endl;
-	// printPair(++ite);
+	it->second.m();
+	ite->second.m();
+	std::cout << "-------------------------------------------------" << std::endl;
+
+	printPair(++it);
+	printPair(it++);
+	printPair(it++);
+	printPair(++it);
+
+	printPair(--ite);
+	printPair(ite--);
+	printPair(--ite);
+	printPair(ite--);
 
 
-	// it->second.m();
-	// ite->second.m();
 
-	// printPair(++it);
-	// printPair(it++);
-	// printPair(it++);
-	// printPair(++it);
+	std::cout << "-------------------------------------------------" << std::endl;
+	(*it).second.m();
+	(*ite).second.m();
+	std::cout << "-------------------------------------------------" << std::endl;
 
-	// printPair(--ite);
-	// printPair(ite--);
-	// printPair(--ite);
-	// printPair(ite--);
-
-
-	// (*it).second.m();
-	// (*ite).second.m();
-
-	// printPair(--it);
-	// printPair(it--);
-	// printPair(it--);
-	// printPair(--it);
+	printPair(--it);
+	printPair(it--);
+	printPair(it--);
+	printPair(--it);
 
 	return (0);
 }
-
