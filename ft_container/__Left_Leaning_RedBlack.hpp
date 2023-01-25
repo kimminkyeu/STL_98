@@ -595,7 +595,7 @@ private: // private data member
 public: // constructor, destructor
 
     // Initializes an empty symbol table.
-    explicit LeftLeaningRedBlack(const value_compare_type& comp = value_compare_type(), const _Allocator& alloc = allocator_type())
+    LeftLeaningRedBlack(const value_compare_type& comp = value_compare_type(), const _Allocator& alloc = allocator_type())
         : _node_alloc_base(alloc), m_Root(NULL), m_Value_compare(comp)
     {}
 
@@ -605,7 +605,7 @@ public: // constructor, destructor
         put(other_tree.begin(), other_tree.end());
     }
 
-    explicit LeftLeaningRedBlack(const allocator_type& a)
+    LeftLeaningRedBlack(const allocator_type& a)
         : _node_alloc_base(a), m_Root(NULL), m_Value_compare(value_compare_type())
     {}
 

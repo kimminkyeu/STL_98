@@ -1,7 +1,8 @@
 NAME			= test
 CC				= c++
 
-CFLAGS			= -std=c++98 -Wall -Wextra -Werror -g3 -fsanitize=address
+# CFLAGS			= -std=c++98 -Wall -Wextra -Werror -g3 -fsanitize=address
+CFLAGS			= -std=c++98 -Wall -Wextra -Werror
 
 INC_DIR 		= ft_container/
 INC_FLAG 		= -I ${INC_DIR}

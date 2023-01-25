@@ -100,5 +100,84 @@ int main(int argc, char** argv) {
 		map_int.insert(ft::make_pair(a, b));
 	}
 
+
+
+//-----------------------------------------------------------------------
+{ // * test 2
+
+#define CONTAINER 	ft::map<std::string, std::string>
+#define CONST_ITER 	ft::map<std::string, std::string>::const_iterator
+#define ITER 		ft::map<std::string, std::string>::iterator
+
+//----------------------------------------------------------
+	ft::map<std::string, std::string> symbol_table;
+	symbol_table["mike"] = "hello";
+	symbol_table["jane"] = "hello";
+	symbol_table["peter"] = "john";
+	symbol_table["apple"] = "11111";
+	symbol_table["bear"] = "india";
+
+	for (CONST_ITER itr = symbol_table.begin(); itr != symbol_table.end(); ++itr)
+	{ std::cout << itr->first << " : " << itr->second << std::endl; }
+
+	std::cout << "\n";
+	std::cout << "Testing insertion on same key\n";
+	std::cout << "-----------------------------------------------\n";
+
+	symbol_table.insert(ft::make_pair("mike", "woops!"));
+
+//----------------------------------------------------------
+
+	ITER backup_iter = symbol_table.find("peter");
+
+	std::cout << "\n";
+	std::cout << "Before insert and delete : invalidation \n";
+	std::cout << "-----------------------------------------------\n";
+	std::cout << backup_iter->first << " : " << backup_iter->second << std::endl;
+
+	symbol_table.insert(ft::make_pair("Kim", "is korean"));
+	symbol_table.erase("bear");
+	symbol_table.erase("mike");
+	symbol_table.erase("Kim");
+
+	std::cout << "\n";
+	std::cout << "After insert and delete : invalidation \n";
+	std::cout << "-----------------------------------------------\n";
+	std::cout << backup_iter->first << " : " << backup_iter->second << std::endl;
+
+
+	std::cout << "\n";
+	std::cout << "\n";
+	for (CONST_ITER itr = symbol_table.begin(); itr != symbol_table.end(); ++itr)
+	{ std::cout << itr->first << " : " << itr->second << std::endl; }
+
+//----------------------------------------------------------
+	std::cout << "\n";
+	std::cout << "Testing erase\n";
+	std::cout << "-----------------------------------------------\n";
+
+	symbol_table.erase("key that doesn't exist");
+	symbol_table.erase("apple");
+
+	std::cout << "\n";
+	for (CONST_ITER itr = symbol_table.begin(); itr != symbol_table.end(); ++itr)
+	{ std::cout << itr->first << " : " << itr->second << std::endl; }
+
+	std::cout << "\n";
+
+	std::cout << "\n";
+	std::cout << "Copy Data to another map\n";
+	std::cout << "-----------------------------------------------\n";
+
+	CONTAINER other(symbol_table.begin(), symbol_table.end());
+	std::cout << "\n";
+	for (CONST_ITER itr = other.begin(); itr != other.end(); ++itr)
+	{ std::cout << itr->first << " : " << itr->second << std::endl; }
+
+	std::cout << "\n";
+//----------------------------------------------------------
+}
+
+	system("leaks test > leaks_result_temp; cat leaks_result_temp | grep leaked && rm -rf leaks_result_temp");
 	return (0);
 }
