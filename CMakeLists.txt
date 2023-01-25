@@ -10,8 +10,9 @@ add_link_options(-Wall -Wextra -Wall -g3 -fsanitize=address)
 
 set(TEST_SRC_FILES
         test/main.cpp)
+        # test/test2.cpp)
 
-#set(TEST_SRC_FILES
+# set(TEST_SRC_FILES
 #        test/left_leaning_red_black_test.cpp)
 
 add_executable(tester

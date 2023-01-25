@@ -61,7 +61,7 @@ protected:
 
     FT_HIDE_FROM_ABI
     void __deallocate_address_of(pointer _p)
-    { if (_p) { __m_Data_allocator.deallocate(_p, this->capacity()); } }
+    { if (_p) { __m_Data_allocator.deallocate(_p, this->__capacity()); } }
 
     // reallocate memory + copy existing data to new memory region.
     FT_HIDE_FROM_ABI
@@ -73,8 +73,7 @@ protected:
         }
 
         // exception1. no size_change
-        const size_type _capacity = __m_End_of_Storage - __m_Start;
-        if (newCapacity == size_t(__m_End_of_Storage - __m_Start))
+        if (newCapacity == __capacity())
             return;
 
         // 1. allocate a new block of memory
@@ -115,7 +114,8 @@ protected:
     FT_HIDE_FROM_ABI
     void __destroy_address_of_range(pointer _first, pointer _last) {
         for (; _first != _last; ++_first) {
-            __destroy_address_of(&(*_first)); // pass pointer to the element.
+            // __destroy_address_of(&(*_first)); // pass pointer to the element.
+            __destroy_address_of(_first); // pass pointer to the element.
         }
     }
 
@@ -181,11 +181,6 @@ protected: // helper functions
 // ---------------------------------------------------------------
 // ! STL Vector 헤더가 복잡하게 디자인되어 있는 이유를 다음 두가지 특징을 통해 유추해보았습니다.
 
-// // ! 첫번째 특징은, STL의 경우 vector_base의 멤버 데이터들을 전부 vector로부터 숨겼다는 것입니다.
-// //  base를 상속받는 Vector class에서는 절대 __m_Finish, __m_Start와 같은 base의 변수들을 직접 사용하지 않습니다.
-// //  제 생각엔 end_cap(), start_cap() 과 같은 아이들의 역할이 바로 이 둘을 연결해주는 다리로 보입니다.
-//  아 다시 보니 아니네 ㅋㅋㅋ 위는 취소
-
 // ! 두번째 특징은 왜 STL은 vector_base에서 정의된 함수들을
 // ! __some_thing_function(), __do_other_thing() 이런 식으로 길고 상세하게 적었냐는 점입니다.
 
@@ -232,6 +227,13 @@ public:
     typedef typename FT::random_access_iterator<const_pointer, vector_type>     const_iterator;
     typedef typename FT::reverse_iterator<iterator>			                    reverse_iterator;
     typedef typename FT::reverse_iterator<const_iterator>                       const_reverse_iterator;
+
+
+
+private:
+
+
+
 
 public:
     // 23.2.4.1 construct/copy/destroy:
@@ -281,7 +283,7 @@ public:
     {
         // (1) call destructor of vector_alloc_base
         // (2) call destructor of vector_base
-        __destroy_address_of_range(this->__m_Start, this->__m_Finish);
+        this->__destroy_address_of_range(this->__m_Start, this->__m_Finish);
     }
 
     FT_HIDE_FROM_ABI
@@ -291,13 +293,13 @@ public:
         if (*this == other) return *this;
 
         // if other is larger, then need to reallocate memory
-        __destroy_address_of_range(this->__m_Start, this->__m_Finish);
+        this->__destroy_address_of_range(this->__m_Start, this->__m_Finish);
         if (other.size() > this->capacity())
         {
             const difference_type new_size = std::distance(other.begin(), other.end());
 
-            __deallocate_address_of(this->__m_Start);
-            this->__m_Start = __allocate_size_of(new_size);
+            this->__deallocate_address_of(this->__m_Start);
+            this->__m_Start = this->__allocate_size_of(new_size);
             this->__m_Finish = std::uninitialized_copy(other.begin(), other.end(), this->__m_Start);
             this->__m_End_of_Storage = this->__m_Finish;
         }
@@ -365,11 +367,11 @@ public:
         if (_n == this->size())
             return ;
         else if (_n < this->size())
-            __destroy_address_of_range(this->__m_Start + _n, this->__m_Finish);
+            this->__destroy_address_of_range(this->__m_Start + _n, this->__m_Finish);
         else // n > this->size()
         {
             if (_n > this->capacity()) // if n is also greater than capacity
-                __reallocate_size_of((capacity() * 2) + _n);
+                this->__reallocate_size_of((capacity() * 2) + _n);
             std::uninitialized_fill_n(this->__m_Finish, _n - size(), _value);
         }
         this->__m_Finish = this->__m_Start + _n;
@@ -379,7 +381,7 @@ public:
     void reserve(size_type n) // may throw exception
     {
         if (n > this->capacity())
-            __reallocate_size_of(n);
+            this->__reallocate_size_of(n);
     }
 
     // ---------------------------------------------------------------------------
@@ -439,7 +441,7 @@ public:
                 // may throw exception
     {
         this->clear();
-        __reallocate_size_of(last - first);
+        this->__reallocate_size_of(last - first);
         this->__m_Finish = std::uninitialized_copy(first, last, this->__m_Start);
     }
 
@@ -448,7 +450,7 @@ public:
         // 벡터 객체에 이전에 있었던 원소들은 모두 삭제하고, 인자로 받은 새로운 내용을 집어 넣는다. 원래 내용을 다 지우고 원소 u 를 n 개 가지는 벡터로 만든다.
         this->clear();
         if (n > this->capacity())
-            __reallocate_size_of(n);
+            this->__reallocate_size_of(n);
         std::uninitialized_fill_n(this->__m_Start, n, value);
         this->__m_Finish = this->__m_Start + n;
     }
@@ -466,9 +468,9 @@ public:
             reserve(1);
         }
         else if (this->size() >= this->capacity()) {
-            __reallocate_size_of(this->capacity() * 2);
+            this->__reallocate_size_of(this->capacity() * 2);
         }
-        __construct_by_value_at(this->__m_Finish, value);
+        this->__construct_by_value_at(this->__m_Finish, value);
         ++this->__m_Finish;
     }
 
@@ -478,7 +480,7 @@ public:
         if (this->empty()) {
             return ;
         }
-        __destroy_address_of(--this->__m_Finish);
+        this->__destroy_address_of(--this->__m_Finish);
     }
 
     iterator insert(iterator _position, const T& _value) // may throw exception
@@ -506,11 +508,11 @@ public:
 
         // (1) 뒷 부분 따로 보유.
         FT::vector<T> tmp(_position, end());
-        __destroy_address_of_range(_position, end());
+        this->__destroy_address_of_range(_position.base(), end().base());
 
         // (2) 공간 필요시 확장.
         if (this->size() + n >= this->capacity()) {
-            __reallocate_size_of((this->capacity() * 2) + n); // may throw exception
+            this->__reallocate_size_of((this->capacity() * 2) + n); // may throw exception
         }
         // (3) position 부터 value n개 삽입.
         // 이때 메모리 재할당이 일어날 경우 기존 iterator는 해제된 메모리를 가리키므로, 반드시 업데이트해야 한다.
@@ -533,11 +535,11 @@ public:
 
         // (1) 뒷 부분 따로 보유.
         FT::vector<T> tmp(_position, end());
-        __destroy_address_of_range(_position, end());
+        this->__destroy_address_of_range(_position.base(), end().base());
 
         // (2) 공간 필요시 확장.
         if (this->size() + sizeToCopy >= this->capacity()) {
-            __reallocate_size_of((this->capacity() * 2) + sizeToCopy);
+            this->__reallocate_size_of((this->capacity() * 2) + sizeToCopy);
         }
 
         // 이때 메모리 재할당이 일어날 경우 기존 iterator는 해제된 메모리를 가리키므로, 반드시 업데이트해야 한다.
@@ -594,7 +596,7 @@ public:
         FT::vector<T> tmp(last, end());
 
         // (2) first 이후 부터 싹 다 제거.
-       __destroy_address_of_range(first, end());
+        this->__destroy_address_of_range(first.base(), end().base());
 
         // (3) first 로 백업본 복사.
         this->__m_Finish = std::uninitialized_copy(tmp.begin(), tmp.end(), this->__m_Start + tmp_len);

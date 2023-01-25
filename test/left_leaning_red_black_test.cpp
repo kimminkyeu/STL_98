@@ -39,6 +39,8 @@ int		main()
 
 //    TEST::LeftLeaningRedBlack<int>::iterator t = test.begin();
     TEST::LeftLeaningRedBlack<int>::iterator t = test.begin();
+    TEST::LeftLeaningRedBlack<int>::const_iterator t2 = test.begin();
+
 
     std::cout << "\n--------------------\n";
     std::cout << "Testing copy... \n";
@@ -49,8 +51,8 @@ int		main()
     auto i2 = test.begin();
     auto i3 = *i2;
     int p = i3.key;
-    TEST::LeftLeaningRedBlack<int> other(test.begin(), test.end());
-    TEST::printTree(other);
+    // TEST::LeftLeaningRedBlack<int> other(test.begin(), test.end());
+    // TEST::printTree(other);
 
 
 

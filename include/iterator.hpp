@@ -162,6 +162,7 @@ public: // constructor & destructor
         : m_Current(_other_iterator.base()) // wrapper가 감싸고 있는 부분을 깊은 복사하는 것.
     {}
 
+
 public: // operator
 
     //. Because of explicit keyword on constructor, i added const_iterator cast operator. ( Type-casting [T*] to [const T*] )
@@ -331,6 +332,7 @@ protected: // data member
 public: // constructor & destructor
 
 	reverse_iterator()
+        : m_Current()
     {}
 
 	explicit reverse_iterator(iterator_type _x)
@@ -353,14 +355,13 @@ public: // constructor & destructor
         return (*this);
     }
 
-
 	Iterator base() const
     { return m_Current; }
 
 	reference operator*() const
     {
         iterator_type _tmp = m_Current;
-        return *(--_tmp);
+        return reference(*(--_tmp));
     }
 
 	pointer   operator->() const

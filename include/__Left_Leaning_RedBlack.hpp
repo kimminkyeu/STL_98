@@ -26,12 +26,19 @@ FT_BEGIN_PRIVATE_NAMESPACE
 // |                                                             |
 // ---------------------------------------------------------------
 
+// forward declaration
+template <typename _Key, typename _NodeType>
+class __tree_const_iterator;
+
+
+
 template <typename _Key, typename _NodeType>
 class FT_TEMPLATE_VIS __tree_iterator
  : public std::iterator< std::bidirectional_iterator_tag, _NodeType >
 {
 private: // typedef from class Left_Leaning_Red_Black
     typedef std::iterator< std::bidirectional_iterator_tag, _NodeType >		_Iter_base;
+    typedef __tree_const_iterator<_Key, _NodeType>                          _const_iterator_type;
     typedef __tree_iterator<_Key, _NodeType>                                _iterator_type;
 
 public:
@@ -59,7 +66,7 @@ public: // constructor & destructor
     { return m_Current; }
 
     __tree_iterator()
-            : m_Current()
+            : m_Current(NULL)
     {}
 
     // constructor Wrapping
@@ -67,18 +74,29 @@ public: // constructor & destructor
             : m_Current(_iterator_in.base()), m_LastNode(_iterator_in.m_LastNode)
     {}
 
+
     // * Node pointer to iterator casting.
     // end()를 호출할 경우에만 두번째 파라미터에 last_node의 정보가 들어온다.
     // end()를 호출한게 아니라면, 두번재 파라미터는 NULL이 된다.
-    explicit __tree_iterator(const pointer& _node_pointer_in, const pointer& _last_node_hint = NULL)
+    __tree_iterator(const pointer& _node_pointer_in, const pointer& _last_node_hint = NULL)
         : m_Current(_node_pointer_in), m_LastNode(_last_node_hint)
     {}
 
+
     // 다른 key type을 가리키는 iterator간의 casting. (ex. 서로 다른 type을 node의 KEY로 가진 tree)
     template<typename _Other_Key>
-    explicit __tree_iterator(const __tree_iterator<_Other_Key, _NodeType>& _other_iterator)
-        : m_Current(_other_iterator.base()), m_LastNode(_other_iterator.m_LastNode)
+    __tree_iterator(const __tree_iterator<_Other_Key, _NodeType>& _non_const_iterator)
+        : m_Current(_non_const_iterator.base()), m_LastNode(_non_const_iterator.m_LastNode)
     {}
+
+
+
+       // * iterator를 const_iterator로 캐스팅 할 경우에 사용된다.
+    template<typename Key, typename NodeType>
+    __tree_iterator(const __tree_const_iterator<Key, NodeType>& _iterator_in)
+            : m_Current(_iterator_in.base()), m_LastNode(_iterator_in.m_LastNode)
+    {}
+
 
 public: // operator:
 
@@ -170,6 +188,7 @@ class FT_TEMPLATE_VIS __tree_const_iterator
 private: // typedef from class Left_Leaning_Red_Black
     typedef std::iterator< std::bidirectional_iterator_tag, _NodeType >		_Iter_base;
     typedef __tree_const_iterator<_Key, _NodeType>                          _const_iterator_type;
+    typedef __tree_iterator<_Key, _NodeType>                                _none_const_iterator_type;
 
 
 public:
@@ -186,8 +205,8 @@ public:
 
 protected: // data member
 // * --------------------------------------------------------------------
-    const_pointer m_Current; // pointer to a single node.
-    pointer m_LastNode;    // pointer to the last node of tree. --> --end() 할 때 필요함.
+    const_pointer m_Current;     // const node pointer
+    const_pointer m_LastNode;    // const node pointer to the last node of tree. --> --end() 할 때 필요함.
 // * --------------------------------------------------------------------
 
 public: // constructor & destructor
@@ -195,13 +214,14 @@ public: // constructor & destructor
     const_pointer base() const
     { return m_Current; }
 
-    __tree_const_iterator()
-            : m_Current()
+    __tree_const_iterator(void)
+            : m_Current(NULL), m_LastNode(NULL)
     {}
 
-    // constructor Wrapping
-    __tree_const_iterator(const __tree_const_iterator& _const_iterator_in)
-            : m_Current(_const_iterator_in.base()), m_LastNode(_const_iterator_in.m_LastNode)
+    // * iterator를 const_iterator로 캐스팅 할 경우에 사용된다.
+    template<typename Key, typename NodeType>
+    __tree_const_iterator(const __tree_iterator<Key, NodeType>& _iterator_in)
+            : m_Current(_iterator_in.base()), m_LastNode(_iterator_in.m_LastNode)
     {}
 
     // * Node pointer to iterator casting.
@@ -211,15 +231,14 @@ public: // constructor & destructor
             : m_Current(_node_pointer_in), m_LastNode(_last_node_hint)
     {}
 
-    // * iterator를 const_iterator로 캐스팅 할 경우에 사용된다.
-    template<typename Key, typename NodeType>
-    explicit __tree_const_iterator(const __tree_iterator<_Key, _NodeType>& _iterator_in)
-            : m_Current(_iterator_in.base()), m_LastNode(_iterator_in.m_LastNode)
+    // constructor Wrapping
+    explicit __tree_const_iterator(const __tree_const_iterator& _const_iterator_in)
+            : m_Current(_const_iterator_in.base()), m_LastNode(_const_iterator_in.m_LastNode)
     {}
 
     // 다른 key type을 가리키는 iterator간의 casting. (ex. 서로 다른 type을 node의 KEY로 가진 tree)
     template<typename _Other_Key>
-    explicit __tree_const_iterator(const __tree_const_iterator<_Other_Key, _NodeType>& _other_iterator)
+    __tree_const_iterator(const __tree_const_iterator<_Other_Key, _NodeType>& _other_iterator)
             : m_Current(_other_iterator.base()), m_LastNode(_other_iterator.m_LastNode)
     {}
 
@@ -241,26 +260,30 @@ public: // operator:
     _const_iterator_type operator++(int) // same as iter++;
     {
         const_pointer tmp = m_Current;
-        m_Current = m_Current->getSuccessor();
+        // if (m_Current != NULL)
+            m_Current = m_Current->getSuccessor();
         return __tree_const_iterator(tmp);
     }
 
     _const_iterator_type& operator++() // same as ++iter;
     {
-        m_Current = m_Current->getSuccessor();
+        // if (m_Current != NULL)
+            m_Current = m_Current->getSuccessor();
         return *this;
     }
 
     _const_iterator_type operator--(int)
     {
         const_pointer tmp = m_Current;
-        m_Current = m_Current->getPredecessor();
+        // if (m_Current != NULL)
+            m_Current = m_Current->getPredecessor();
         return __tree_const_iterator(tmp);
     }
 
     _const_iterator_type& operator--()
     {
-        m_Current = m_Current->getPredecessor();
+        // if (m_Current != NULL)
+            m_Current = m_Current->getPredecessor();
         return *this;
     }
 };
@@ -549,8 +572,8 @@ public:
     typedef typename _node_allocator_type::size_type                     size_type;
     typedef typename _node_allocator_type::pointer                       node_pointer;
 
-    typedef __tree_iterator<key_type, node_type>                        iterator;
-    typedef __tree_const_iterator<key_type, node_type>                  const_iterator;
+    typedef __tree_iterator<key_type, node_type>                         iterator;
+    typedef __tree_const_iterator<key_type, node_type>                   const_iterator;
 
 
 private: // private data member
@@ -611,6 +634,7 @@ public: // constructor, destructor
         clear();
         // (2) copy data
         put(other_tree.begin(), other_tree.end());
+        return *this;
     }
 
 
@@ -782,6 +806,10 @@ private:
 public:
     size_type size() const _NOEXCEPT
     {
+        // ! 바로 여기서 문제 발생. 일반 iterator를 const_iterator로 생성할 때 발생함.
+        // const_iterator i = const_iterator(begin());
+        // const_iterator j = const_iterator(end());
+        // return (std::distance(i, j));
         return (std::distance(begin(), end()));
     }
 
@@ -815,6 +843,7 @@ public:
     }
 
     // insert unique data to red black tree.
+    // void put(node_pointer start, node_pointer end)
     template <class InputIterator>
     void put(InputIterator start, InputIterator end)
     {
