@@ -110,6 +110,13 @@ public:
     // * ---------------------------------------------------------
 };
 
+
+// ---------------------------------------------------------------
+// |                                                             |
+// |             map_const_iterator_implementation               |
+// |                                                             |
+// ---------------------------------------------------------------
+
 template <typename _Pair, typename _NodeType, class _TreeConstIterator = _PRIVATE::__tree_const_iterator<_Pair, _NodeType> >
 class FT_TEMPLATE_VIS __map_const_iterator
 {
@@ -149,9 +156,7 @@ public:
     FT_HIDE_FROM_ABI
     __map_const_iterator(const __map_iterator<Key, NodeType>& _non_const_iterator)
             : __i_(_non_const_tree_iterator(_non_const_iterator.base())) // wrapper가 감싸고 있는 부분을 깊은 복사하는 것.
-    {
-        // this->__i_ = _other_iterator.__i_;
-    }
+    {}
 
     FT_HIDE_FROM_ABI
     reference operator*() const
@@ -281,13 +286,13 @@ public: // constructor & destructor.
 
     FT_HIDE_FROM_ABI
     explicit map(const key_compare& comp = key_compare(), const allocator_type& a = allocator_type())
-            : __tree__(comp, a)
+            : __tree__(value_compare(comp), a)
     {}
 
     template <class InputIterator>
     FT_HIDE_FROM_ABI
     map(InputIterator first, InputIterator last, const key_compare& comp = key_compare())
-            : __tree__(comp)
+            : __tree__(value_compare(comp))
     {
         this->insert(first, last);
     }
@@ -295,7 +300,7 @@ public: // constructor & destructor.
     template <class InputIterator>
     FT_HIDE_FROM_ABI
     map(InputIterator first, InputIterator last, const key_compare& comp, const allocator_type& a)
-            : __tree__(comp, a)
+            : __tree__(value_compare(comp), a)
     {
         this->insert(first, last);
     }

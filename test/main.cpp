@@ -6,9 +6,11 @@
 #include "__config.hpp"
 #include "iterator.hpp"
 #include "vector.hpp"
+#include "set.hpp"
 #include <map>
 #include "map.hpp"
 #include <list>
+#include <set>
 
 // --- Class foo
 template <typename T>
@@ -63,29 +65,25 @@ T	dec(T it, int n)
 	return (it);
 }
 
-
 #define TESTED_NAMESPACE FT
-#define _pair TESTED_NAMESPACE::pair
 
 template <typename T>
 std::string	printPair(const T &iterator, bool nl = true, std::ostream &o = std::cout)
 {
-	o << "key: " << iterator->first << " | value: " << iterator->second;
+	o << "value: " << *iterator;
 	if (nl)
 		o << std::endl;
 	return ("");
 }
 
-
-
-template <typename T_MAP>
-void	printSize(T_MAP const &mp, bool print_content = 1)
+template <typename T_SET>
+void	printSize(T_SET const &st, bool print_content = 1)
 {
-	std::cout << "size: " << mp.size() << std::endl;
-	std::cout << "max_size: " << mp.max_size() << std::endl;
+	std::cout << "size: " << st.size() << std::endl;
+	std::cout << "max_size: " << st.max_size() << std::endl;
 	if (print_content)
 	{
-		typename T_MAP::const_iterator it = mp.begin(), ite = mp.end();
+		typename T_SET::const_iterator it = st.begin(), ite = st.end();
 		std::cout << std::endl << "Content is:" << std::endl;
 		for (; it != ite; ++it)
 			std::cout << "- " << printPair(it, false) << std::endl;
@@ -93,32 +91,40 @@ void	printSize(T_MAP const &mp, bool print_content = 1)
 	std::cout << "###############################################" << std::endl;
 }
 
+template <typename T1>
+void	printReverse(TESTED_NAMESPACE::set<T1> &st)
+{
+	typename TESTED_NAMESPACE::set<T1>::iterator it = st.end(), ite = st.begin();
 
-#define T1 float
-#define T2 foo<int>
-typedef _pair<const T1, T2> T3;
+	std::cout << "printReverse:" << std::endl;
+	while (it-- != ite)
+		std::cout << "-> " << printPair(it, false) << std::endl;
+	std::cout << "_______________________________________________" << std::endl;
+}
+
+#include <list>
+
+#define T1 foo<int>
 
 int		main(void)
 {
-	std::list<T3> lst;
+	std::list<T1> lst;
 	unsigned int lst_size = 5;
 	for (unsigned int i = 0; i < lst_size; ++i)
-		lst.push_back(T3(2.5 - i, (i + 1) * 7));
+		lst.push_back(2.5 + i);
 
-	TESTED_NAMESPACE::map<T1, T2> mp(lst.begin(), lst.end());
-	TESTED_NAMESPACE::map<T1, T2>::reverse_iterator it(mp.rbegin());
-	TESTED_NAMESPACE::map<T1, T2>::const_reverse_iterator ite(mp.rbegin());
-	printSize(mp);
+	TESTED_NAMESPACE::set<T1> st(lst.begin(), lst.end());
+	TESTED_NAMESPACE::set<T1>::iterator it(st.begin());
+	TESTED_NAMESPACE::set<T1>::const_iterator ite(st.begin());
+	printSize(st);
+
 	printPair(++ite);
 	printPair(ite++);
 	printPair(ite++);
 	printPair(++ite);
 
-
-	std::cout << "-------------------------------------------------" << std::endl;
-	it->second.m();
-	ite->second.m();
-	std::cout << "-------------------------------------------------" << std::endl;
+	it->m();
+	ite->m();
 
 	printPair(++it);
 	printPair(it++);
@@ -130,12 +136,8 @@ int		main(void)
 	printPair(--ite);
 	printPair(ite--);
 
-
-
-	std::cout << "-------------------------------------------------" << std::endl;
-	(*it).second.m();
-	(*ite).second.m();
-	std::cout << "-------------------------------------------------" << std::endl;
+	(*it).m();
+	(*ite).m();
 
 	printPair(--it);
 	printPair(it--);

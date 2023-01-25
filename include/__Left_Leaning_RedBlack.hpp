@@ -559,7 +559,7 @@ struct RedBlackNode
 
 
 // if Map, KeyType will be ft::pair<A, B>.  if Set, KeyType will be A.
-template <class _KeyType, class _Compare = std::less<_KeyType>, class _Allocator = std::allocator<_KeyType> >
+template <class _KeyType, class _Compare, class _Allocator = std::allocator<_KeyType> >
 class LeftLeaningRedBlack : protected Tree_node_alloc_base<_KeyType, // * Rebind는 alloc_base에서 담당.
                                                            RedBlackNode<_KeyType, _Compare>,
                                                            _Allocator>
@@ -644,6 +644,11 @@ public: // constructor, destructor
         // (2) copy data
         put(other_tree.begin(), other_tree.end());
         return *this;
+    }
+
+    value_compare_type value_comp() const _NOEXCEPT
+    {
+        return value_compare_type();
     }
 
 
