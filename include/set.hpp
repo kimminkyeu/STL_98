@@ -42,10 +42,10 @@ private: // helper function
 
 public:
     typedef std::bidirectional_iterator_tag                      iterator_category;
-    typedef typename _node_type::key_type                        value_type;            // pair
+    typedef typename _node_type::key_type                        value_type;            // key
     typedef typename _TreeConstIterator::difference_type         difference_type;
-    typedef typename _node_type::const_key_type_reference        reference;       // const pair &
-    typedef typename _node_type::const_key_type_pointer          pointer;         // const pair *
+    typedef typename _node_type::const_key_type_reference        reference;       // const key &
+    typedef typename _node_type::const_key_type_pointer          pointer;         // const key *
 
 public:
     FT_HIDE_FROM_ABI
@@ -111,7 +111,7 @@ FT_BEGIN_GLOBAL_NAMESPACE
 // |                   set implementation                        |
 // |                                                             |
 // ---------------------------------------------------------------
-// * map은 LeftLeaningRedBlack class의 adapter class이며, 내부 로직은 모두 __tree__ 멤버 데이터를 통해 이뤄집니다.
+// * set은 LeftLeaningRedBlack class의 adapter class이며, 내부 로직은 모두 __tree__ 멤버 데이터를 통해 이뤄집니다.
 
 template <class Key, class Compare = std::less<Key>,
           class Allocator = std::allocator<Key> >
@@ -198,9 +198,9 @@ public: // constructor & destructor.
     { /* destruct everything in tree_base */ }
 
     FT_HIDE_FROM_ABI
-    set& operator=(const _set_type& m)
+    set& operator=(const _set_type& s)
     {
-        __tree__ = m.__tree__;
+        __tree__ = s.__tree__;
         return *this;
     }
 
@@ -339,7 +339,7 @@ public:
     }
 
     // Exchanges the content of the container by the content of x, which is
-    // another map of the same type. Sizes may differ.
+    // another set of the same type. Sizes may differ.
     FT_HIDE_FROM_ABI
     void swap( set& other ) _NOEXCEPT
     {
@@ -476,7 +476,7 @@ operator!=(const set<Key, Compare, Allocator>& __x,
 
 // Compares the contents of lhs and rhs lexicographically.
 // The comparison is performed by a function equivalent to
-// std::lexicographical_compare. This comparison ignores the map's ordering Compare.
+// std::lexicographical_compare. This comparison ignores the set's ordering Compare.
 template <class Key, class Compare, class Allocator>
 inline FT_HIDE_FROM_ABI
 bool
