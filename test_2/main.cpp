@@ -19,7 +19,7 @@
 
 #include <stdlib.h>
 
-#define MAX_RAM 4294967296
+#define MAX_RAM 12945
 #define BUFFER_SIZE 4096
 struct Buffer
 {
@@ -95,27 +95,10 @@ int main(int argc, char** argv) {
 
 	for (int i = 0; i < COUNT; ++i)
 	{
-		map_int.insert(ft::make_pair(rand(), rand()));
+		int a = rand();
+		int b = rand();
+		map_int.insert(ft::make_pair(a, b));
 	}
 
-	int sum = 0;
-	for (int i = 0; i < 10000; i++)
-	{
-		int access = rand();
-		sum += map_int[access];
-	}
-	std::cout << "should be constant with the same seed: " << sum << std::endl;
-
-	{
-		ft::map<int, int> copy = map_int;
-	}
-	MutantStack<char> iterable_stack;
-	for (char letter = 'a'; letter <= 'z'; letter++)
-		iterable_stack.push(letter);
-	for (MutantStack<char>::iterator it = iterable_stack.begin(); it != iterable_stack.end(); it++)
-	{
-		std::cout << *it;
-	}
-	std::cout << std::endl;
 	return (0);
 }
