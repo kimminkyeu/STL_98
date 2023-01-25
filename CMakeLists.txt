@@ -7,13 +7,8 @@ set(CMAKE_CXX_STANDARD 98)
 add_compile_options(-Wall -Wextra -Wall -g3 -fsanitize=address)
 add_link_options(-Wall -Wextra -Wall -g3 -fsanitize=address)
 
-
 set(TEST_SRC_FILES
-        test/main.cpp)
-        # test/test2.cpp)
-
-# set(TEST_SRC_FILES
-#        test/left_leaning_red_black_test.cpp)
+        test_2/main.cpp)
 
 add_executable(tester
         ${TEST_SRC_FILES}
@@ -21,5 +16,5 @@ add_executable(tester
 
 target_include_directories(tester
         PUBLIC
-        include
+        ft_container
         )
