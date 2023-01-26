@@ -237,9 +237,9 @@ int main(int argc, char** argv) {
         for (int i = 0; i < total; ++i) {
                         ft_map.erase(i);
         }
-        sec = std::chrono::system_clock::now() - start2;
+        std::chrono::duration<double> sec2 = std::chrono::system_clock::now() - start2;
         std::cout << PRINT_GREEN
-                  << "FT's  insert & delete " << total << "data : " << sec.count()
+                  << "FT's  insert & delete " << total << "data : " << sec2.count()
                   << " seconds " << PRINT_RESET << std::endl;
         // --------------------------------------------------------------
         }
