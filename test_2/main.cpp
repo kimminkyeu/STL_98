@@ -6,6 +6,7 @@
 #include <iostream>
 #include <string>
 #include <deque>
+#include <utility>
 #if 1 //CREATE A REAL STL EXAMPLE
 	#include <map>
 	#include <stack>
@@ -18,6 +19,7 @@
 #endif
 
 #include <stdlib.h>
+#include <chrono>
 
 #define MAX_RAM 12945
 #define BUFFER_SIZE 4096
@@ -27,6 +29,14 @@ struct Buffer
 	char buff[BUFFER_SIZE];
 };
 
+/*
+  std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
+    int sum = 0;
+    for (int i = 0;i < 999999999;i++)
+        sum += i;
+    std::chrono::duration<double>sec = std::chrono::system_clock::now() - start;
+    std::cout << "for문을 돌리는데 걸리는 시간(초) : " << sec.count() <<"seconds"<< std::endl;
+*/
 
 #define COUNT (MAX_RAM / (int)sizeof(Buffer))
 
@@ -121,6 +131,7 @@ int main(int argc, char** argv) {
 	{ std::cout << itr->first << " : " << itr->second << std::endl; }
 
 	std::cout << "\n";
+	std::cout << "-----------------------------------------------\n";
 	std::cout << "Testing insertion on same key\n";
 	std::cout << "-----------------------------------------------\n";
 
@@ -131,6 +142,7 @@ int main(int argc, char** argv) {
 	ITER backup_iter = symbol_table.find("peter");
 
 	std::cout << "\n";
+	std::cout << "-----------------------------------------------\n";
 	std::cout << "Before insert and delete : invalidation \n";
 	std::cout << "-----------------------------------------------\n";
 	std::cout << backup_iter->first << " : " << backup_iter->second << std::endl;
@@ -141,6 +153,7 @@ int main(int argc, char** argv) {
 	symbol_table.erase("Kim");
 
 	std::cout << "\n";
+	std::cout << "-----------------------------------------------\n";
 	std::cout << "After insert and delete : invalidation \n";
 	std::cout << "-----------------------------------------------\n";
 	std::cout << backup_iter->first << " : " << backup_iter->second << std::endl;
@@ -153,6 +166,7 @@ int main(int argc, char** argv) {
 
 //----------------------------------------------------------
 	std::cout << "\n";
+	std::cout << "-----------------------------------------------\n";
 	std::cout << "Testing erase\n";
 	std::cout << "-----------------------------------------------\n";
 
@@ -166,6 +180,7 @@ int main(int argc, char** argv) {
 	std::cout << "\n";
 
 	std::cout << "\n";
+	std::cout << "-----------------------------------------------\n";
 	std::cout << "Copy Data to another map\n";
 	std::cout << "-----------------------------------------------\n";
 
@@ -177,7 +192,60 @@ int main(int argc, char** argv) {
 	std::cout << "\n";
 //----------------------------------------------------------
 }
+	std::cout << "\n";
+	std::cout << "-----------------------------------------------\n";
+	std::cout << "Map Performance check\n";
+	std::cout << "-----------------------------------------------\n";
 
+
+#define STL   std::map<int, int>
+#define CNT   ft::map<int, int>
+
+	STL stl_map;
+	CNT ft_map;
+	const int total = 1000000;
+
+        {
+        // --------------------------------------------------------------
+        std::chrono::system_clock::time_point start =
+            std::chrono::system_clock::now();
+        for (int i = 0; i < total; ++i) {
+                        stl_map.insert(std::make_pair(i, i));
+        }
+		for (STL::iterator iter = stl_map.begin(); iter != stl_map.end(); ++iter) {
+			// ...
+		}
+        for (int i = 0; i < total; ++i) {
+                        stl_map.erase(i);
+        }
+        std::chrono::duration<double> sec =
+            std::chrono::system_clock::now() - start;
+        std::cout << PRINT_BLUE
+                  << "STD's insert & delete " << total << "data : " << sec.count()
+                  << " seconds " << PRINT_RESET << std::endl;
+        // --------------------------------------------------------------
+
+        // --------------------------------------------------------------
+        std::chrono::system_clock::time_point start2 =
+            std::chrono::system_clock::now();
+        for (int i = 0; i < total; ++i) {
+                        ft_map.insert(ft::make_pair(i, i));
+        }
+		for (CNT::iterator iter = ft_map.begin(); iter != ft_map.end(); ++iter) {
+			// ...
+		}
+        for (int i = 0; i < total; ++i) {
+                        ft_map.erase(i);
+        }
+        sec = std::chrono::system_clock::now() - start2;
+        std::cout << PRINT_GREEN
+                  << "FT's  insert & delete " << total << "data : " << sec.count()
+                  << " seconds " << PRINT_RESET << std::endl;
+        // --------------------------------------------------------------
+        }
+
+
+	std::cout << "\n";
 	system("leaks test > leaks_result_temp; cat leaks_result_temp | grep leaked && rm -rf leaks_result_temp");
 	return (0);
 }
