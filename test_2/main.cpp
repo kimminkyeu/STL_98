@@ -3,6 +3,7 @@
 #include "../ft_container/map.hpp"
 #include "../ft_container/set.hpp"
 
+#include <algorithm>
 #include <iostream>
 #include <string>
 #include <deque>
@@ -132,7 +133,7 @@ int main(int argc, char** argv) {
 
 	std::cout << "\n";
 	std::cout << "-----------------------------------------------\n";
-	std::cout << "Testing insertion on same key\n";
+	std::cout << "|      Testing insertion on same key          |\n";
 	std::cout << "-----------------------------------------------\n";
 
 	symbol_table.insert(ft::make_pair("mike", "woops!"));
@@ -143,7 +144,7 @@ int main(int argc, char** argv) {
 
 	std::cout << "\n";
 	std::cout << "-----------------------------------------------\n";
-	std::cout << "Before insert and delete : invalidation \n";
+	std::cout << "|  Before insert and delete : invalidation    |\n";
 	std::cout << "-----------------------------------------------\n";
 	std::cout << backup_iter->first << " : " << backup_iter->second << std::endl;
 
@@ -154,7 +155,7 @@ int main(int argc, char** argv) {
 
 	std::cout << "\n";
 	std::cout << "-----------------------------------------------\n";
-	std::cout << "After insert and delete : invalidation \n";
+	std::cout << "|  After insert and delete : invalidation     |\n";
 	std::cout << "-----------------------------------------------\n";
 	std::cout << backup_iter->first << " : " << backup_iter->second << std::endl;
 
@@ -167,7 +168,7 @@ int main(int argc, char** argv) {
 //----------------------------------------------------------
 	std::cout << "\n";
 	std::cout << "-----------------------------------------------\n";
-	std::cout << "Testing erase\n";
+	std::cout << "|               Testing erase                 |\n";
 	std::cout << "-----------------------------------------------\n";
 
 	symbol_table.erase("key that doesn't exist");
@@ -181,7 +182,7 @@ int main(int argc, char** argv) {
 
 	std::cout << "\n";
 	std::cout << "-----------------------------------------------\n";
-	std::cout << "Copy Data to another map\n";
+	std::cout << "|           Copy Data to another map          |\n";
 	std::cout << "-----------------------------------------------\n";
 
 	CONTAINER other(symbol_table.begin(), symbol_table.end());
@@ -193,9 +194,9 @@ int main(int argc, char** argv) {
 //----------------------------------------------------------
 }
 	std::cout << "\n";
-	std::cout << "-----------------------------------------------\n";
-	std::cout << "Map Performance check\n";
-	std::cout << "-----------------------------------------------\n";
+	std::cout << PRINT_RED << "-----------------------------------------------\n";
+	std::cout << "|           Map Performance check             |\n";
+	std::cout << "-----------------------------------------------\n\n" << PRINT_RESET;
 
 
 #define STL   std::map<int, int>
@@ -206,6 +207,7 @@ int main(int argc, char** argv) {
 	const int total = 1000000;
 
         {
+		std::cout << "(1) Map insert / delete \n";
         // --------------------------------------------------------------
         std::chrono::system_clock::time_point start =
             std::chrono::system_clock::now();
@@ -224,8 +226,6 @@ int main(int argc, char** argv) {
                   << "STD's insert & delete " << total << "data : " << sec.count()
                   << " seconds " << PRINT_RESET << std::endl;
         // --------------------------------------------------------------
-
-        // --------------------------------------------------------------
         std::chrono::system_clock::time_point start2 =
             std::chrono::system_clock::now();
         for (int i = 0; i < total; ++i) {
@@ -243,6 +243,44 @@ int main(int argc, char** argv) {
                   << " seconds " << PRINT_RESET << std::endl;
         // --------------------------------------------------------------
         }
+
+
+		std::cout << "\n";
+
+		// testing upper_bound
+
+		{
+		std::cout << "(2) Map upper_bound / lower_bound \n";
+        // --------------------------------------------------------------
+        std::chrono::system_clock::time_point start =
+            std::chrono::system_clock::now();
+        for (int i = 0; i < total; ++i) {
+			(void)stl_map.upper_bound(i);
+        }
+        for (int i = 0; i < total; ++i) {
+			(void)stl_map.lower_bound(i);
+        }
+        std::chrono::duration<double> sec =
+            std::chrono::system_clock::now() - start;
+        std::cout << PRINT_BLUE << "STD's upper_bound & lower_bound " << total
+                  << "data : " << sec.count() << " seconds " << PRINT_RESET
+                  << std::endl;
+        // --------------------------------------------------------------
+        std::chrono::system_clock::time_point start2 =
+            std::chrono::system_clock::now();
+        for (int i = 0; i < total / 2; ++i) {
+                        (void)ft_map.upper_bound(i * 2);
+        }
+        for (int i = 0; i < total / 2; ++i) {
+                        (void)ft_map.lower_bound(i * 2);
+        }
+        std::chrono::duration<double> sec2 =
+            std::chrono::system_clock::now() - start2;
+        std::cout << PRINT_GREEN << "FT's  upper_bound & lower_bound " << total
+                  << "data : " << sec2.count() << " seconds " << PRINT_RESET
+                  << std::endl;
+        // --------------------------------------------------------------
+		}
 
 
 	std::cout << "\n";
